@@ -1,0 +1,48 @@
+# Unity 生成的临时和缓存目录
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# 日志文件
+*.log
+
+# Blender 导入缓存
+*.blend1
+*.blend1.meta
+
+# 大型调试文件
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# IDE 相关
+.vs/
+gradle/
+*.csproj
+*.sln
+*.user
+*.userprefs
+
+# Unity 崩溃报告
+sysinfo.txt
+mono_crash.*
+
+# 构建产物
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Addressables 缓存
+/ServerData
+[Aa]ssets/StreamingAssets/aa*
+[Aa]ssets/AddressableAssetsData/*/*.bin*
+
+# Visual Scripting 自动生成
+[Aa]ssets/Unity.VisualScripting.Generated/**
+
+# 特殊保留：Library 下的入口文件
+!Library/LastSceneManagerSetup.txt
