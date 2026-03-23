@@ -4,7 +4,7 @@ using OctoberStudio.Pool;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem; // 添加新输入系统命名空间
+using UnityEngine.InputSystem;
 
 namespace OctoberStudio.Abilities
 {
@@ -18,13 +18,14 @@ namespace OctoberStudio.Abilities
         private PoolComponent<SimplePlayerProjectileBehavior> projectilePool;
         public List<SimplePlayerProjectileBehavior> projectiles = new List<SimplePlayerProjectileBehavior>();
 
+        IEasingCoroutine projectileCoroutine;
         Coroutine abilityCoroutine;
 
         private float AbilityCooldown => AbilityLevel.AbilityCooldown * PlayerBehavior.Player.CooldownMultiplier;
 
         private void Awake()
         {
-            projectilePool = new PoolComponent<SimplePlayerProjectileBehavior>("Wand Projectile", ProjectilePrefab, 50);
+            projectilePool = new PoolComponent<SimplePlayerProjectileBehavior>("Wand Projectiule", ProjectilePrefab, 50);
         }
 
         protected override void SetAbilityLevel(int stageId)
@@ -48,6 +49,7 @@ namespace OctoberStudio.Abilities
 
                     var projectile = projectilePool.GetEntity();
 
+                    // 获取鼠标方向（单发）
                     Vector2 direction = GetMouseDirection();
 
                     var aliveDuration = Time.time - spawnTime;
@@ -73,13 +75,8 @@ namespace OctoberStudio.Abilities
 
         private Vector2 GetMouseDirection()
         {
-            // 使用新 Input System 获取鼠标位置
             var mouse = Mouse.current;
-            if (mouse == null)
-            {
-                // 如果没有鼠标设备（例如在编辑器外），返回默认方向
-                return Vector2.up;
-            }
+            if (mouse == null) return Vector2.up;
 
             Vector2 mouseScreenPos = mouse.position.ReadValue();
             Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
@@ -88,10 +85,7 @@ namespace OctoberStudio.Abilities
             Vector2 mousePos2D = new Vector2(mouseWorldPos.x, mouseWorldPos.y);
             Vector2 direction = mousePos2D - PlayerBehavior.CenterPosition;
 
-            if (direction.sqrMagnitude < 0.001f)
-            {
-                return Vector2.up;
-            }
+            if (direction.sqrMagnitude < 0.001f) return Vector2.up;
             return direction.normalized;
         }
 
@@ -104,6 +98,8 @@ namespace OctoberStudio.Abilities
 
         private void Disable()
         {
+            projectileCoroutine.StopIfExists();
+
             for (int i = 0; i < projectiles.Count; i++)
             {
                 projectiles[i].gameObject.SetActive(false);
@@ -111,8 +107,7 @@ namespace OctoberStudio.Abilities
 
             projectiles.Clear();
 
-            if (abilityCoroutine != null)
-                StopCoroutine(abilityCoroutine);
+            StopCoroutine(abilityCoroutine);
         }
 
         public override void Clear()

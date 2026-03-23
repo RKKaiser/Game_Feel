@@ -4,6 +4,7 @@ using OctoberStudio.Pool;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem; // 添加新输入系统命名空间
 
 namespace OctoberStudio.Abilities
 {
@@ -19,6 +20,10 @@ namespace OctoberStudio.Abilities
 
         IEasingCoroutine projectileCoroutine;
         Coroutine abilityCoroutine;
+
+        // 扇形参数（可自行调整）
+        private const float SPREAD_ANGLE = 60f;    // 总扇形角度
+        private const int PROJECTILE_COUNT = 10;   // 子弹数量
 
         private float AbilityCooldown => AbilityLevel.AbilityCooldown * PlayerBehavior.Player.CooldownMultiplier;
 
@@ -46,28 +51,30 @@ namespace OctoberStudio.Abilities
                 {
                     var spawnTime = lastTimeSpawned + AbilityCooldown;
 
-                    var projectile = projectilePool.GetEntity();
+                    // 获取鼠标指向的中心方向
+                    Vector2 centerDirection = GetMouseDirection();
 
-                    var closestEnemy = StageController.EnemiesSpawner.GetClosestEnemy(PlayerBehavior.CenterPosition);
-
-                    var direction = Vector2.up;
-                    if (closestEnemy != null)
+                    // 生成扇形子弹
+                    for (int i = 0; i < PROJECTILE_COUNT; i++)
                     {
-                        direction = closestEnemy.Center - PlayerBehavior.CenterPosition;
-                        direction.Normalize();
+                        // 计算偏移角度（均匀分布）
+                        float angleOffset = (i - (PROJECTILE_COUNT - 1) / 2f) * (SPREAD_ANGLE / (PROJECTILE_COUNT - 1));
+                        Vector2 direction = RotateVector(centerDirection, angleOffset * Mathf.Deg2Rad);
+
+                        var projectile = projectilePool.GetEntity();
+
+                        var aliveDuration = Time.time - spawnTime;
+                        var position = PlayerBehavior.CenterPosition + direction * aliveDuration * AbilityLevel.ProjectileSpeed * PlayerBehavior.Player.ProjectileSpeedMultiplier;
+
+                        projectile.Init(position, direction);
+                        projectile.Speed = AbilityLevel.ProjectileSpeed * PlayerBehavior.Player.ProjectileSpeedMultiplier;
+                        projectile.transform.localScale = Vector3.one * AbilityLevel.ProjectileSize * PlayerBehavior.Player.SizeMultiplier;
+                        projectile.LifeTime = AbilityLevel.ProjectileLifetime;
+                        projectile.DamageMultiplier = AbilityLevel.Damage;
+
+                        projectile.onFinished += OnProjectileFinished;
+                        projectiles.Add(projectile);
                     }
-
-                    var aliveDuration = Time.time - spawnTime;
-                    var position = PlayerBehavior.CenterPosition + direction * aliveDuration * AbilityLevel.ProjectileSpeed * PlayerBehavior.Player.ProjectileSpeedMultiplier;
-
-                    projectile.Init(position, direction);
-                    projectile.Speed = AbilityLevel.ProjectileSpeed * PlayerBehavior.Player.ProjectileSpeedMultiplier;
-                    projectile.transform.localScale = Vector3.one * AbilityLevel.ProjectileSize * PlayerBehavior.Player.SizeMultiplier;
-                    projectile.LifeTime = AbilityLevel.ProjectileLifetime;
-                    projectile.DamageMultiplier = AbilityLevel.Damage;
-
-                    projectile.onFinished += OnProjectileFinished;
-                    projectiles.Add(projectile);
 
                     lastTimeSpawned += AbilityCooldown;
 
@@ -76,6 +83,31 @@ namespace OctoberStudio.Abilities
 
                 yield return null;
             }
+        }
+
+        // 获取鼠标方向（使用新 Input System）
+        private Vector2 GetMouseDirection()
+        {
+            var mouse = Mouse.current;
+            if (mouse == null) return Vector2.up;
+
+            Vector2 mouseScreenPos = mouse.position.ReadValue();
+            Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
+            mouseWorldPos.z = 0f;
+
+            Vector2 mousePos2D = new Vector2(mouseWorldPos.x, mouseWorldPos.y);
+            Vector2 direction = mousePos2D - PlayerBehavior.CenterPosition;
+
+            if (direction.sqrMagnitude < 0.001f) return Vector2.up;
+            return direction.normalized;
+        }
+
+        // 旋转向量
+        private Vector2 RotateVector(Vector2 v, float rad)
+        {
+            float cos = Mathf.Cos(rad);
+            float sin = Mathf.Sin(rad);
+            return new Vector2(v.x * cos - v.y * sin, v.x * sin + v.y * cos);
         }
 
         private void OnProjectileFinished(SimplePlayerProjectileBehavior projectile)
