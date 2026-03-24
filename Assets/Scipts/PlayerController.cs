@@ -1,100 +1,196 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
 public class PlayerController : MonoBehaviour
 {
     [Header("移动设置")]
     public float moveSpeed = 5f;
-    public float boundaryPadding = 0.5f; // 距离边界的缓冲距离
+    public float rotationSpeed = 10f; // 如果需要平滑旋转可以启用，否则直接朝向鼠标
 
-    [Header("射击设置")]
-    public Transform firePoint; // 子弹发射点
-    public GameObject bulletPrefab; // 子弹预制体 (稍后创建)
-    public float fireRate = 0.2f; // 射击间隔 (秒)
-    
-    // 内部变量
+    [Header("武器设置")]
+    public Transform weaponPivot; // 武器挂载点（子物体）
+    public List<Weapon> availableWeapons = new List<Weapon>(); // 可选武器列表
+    private Weapon currentWeapon;
+
+    [Header("状态")]
+    public bool isDead = false;
+    public int maxHealth = 1; // 设定为1，碰到即死
+    private int currentHealth;
+
+    // 组件缓存
     private Rigidbody2D rb;
-    private Vector2 movement;
-    private Vector2 mouseWorldPosition;
-    private float nextFireTime = 0f;
-    private bool isFiring = false;
-    
-    // 边界缓存
-    private float minX, maxX, minY, maxY;
+    private Collider2D playerCollider;
+    private SpriteRenderer sr;
+    private Color originalColor;
 
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        
-        if (firePoint == null)
-        {
-            // 如果没有手动指定，尝试寻找子物体 "WeaponPivot"
-            Transform pivot = transform.Find("WeaponPivot");
-            if (pivot != null) firePoint = pivot;
-            else firePoint = transform; // 如果都没有，就在中心发射
-        }
+        playerCollider = GetComponent<Collider2D>();
+        sr = GetComponent<SpriteRenderer>();
+        if (sr != null) originalColor = sr.color;
 
+        currentHealth = maxHealth;
+        isDead = false;
+
+        // 初始化第一个武器，或者通过外部调用 SwitchWeapon
+        if (availableWeapons.Count > 0 && currentWeapon == null)
+        {
+            SwitchWeapon(0);
+        }
     }
 
     void Update()
     {
-        // 1. 获取输入 (移动)
-        float moveX = Input.GetAxisRaw("Horizontal"); // A/D or Left/Right
-        float moveY = Input.GetAxisRaw("Vertical");   // W/S or Up/Down
-        
-        movement = new Vector2(moveX, moveY).normalized;
+        if (isDead) return;
 
-        // 2. 获取鼠标位置并计算角度
-        // 将鼠标屏幕坐标转换为世界坐标
-        mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        
-        // 计算玩家朝向鼠标的角度
-        Vector2 aimDirection = (mouseWorldPosition - (Vector2)transform.position).normalized;
-        float angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-        
-        // 旋转玩家 (只旋转Z轴) 和 武器挂载点
-        // 注意：如果你的螃蟹素材默认朝右，直接赋值即可。如果默认朝上，需要 -90
-        transform.rotation = Quaternion.Euler(0, 0, angle);
+        HandleMovement();
+        HandleAiming();
+        HandleShooting();
+    }
 
-        // 3. 射击逻辑
-        // 支持点击 (GetButtonDown) 和 按住 (GetButton)
-        if (Input.GetButton("Fire1")) // 默认是鼠标左键
-        {
-            isFiring = true;
-        }
-        else
-        {
-            isFiring = false;
-        }
+    // --- 移动逻辑 (WASD) ---
+    void HandleMovement()
+    {
+        float moveX = Input.GetAxisRaw("Horizontal"); // A/D
+        float moveY = Input.GetAxisRaw("Vertical");   // W/S
 
-        if (isFiring && Time.time >= nextFireTime)
+        Vector2 moveDirection = new Vector2(moveX, moveY).normalized;
+
+        // 直接设置速度，忽略物理惯性（手感更跟手）
+        rb.velocity = moveDirection * moveSpeed;
+    }
+
+    // --- 瞄准逻辑 (鼠标) ---
+    void HandleAiming()
+    {
+        if (weaponPivot == null) return;
+
+        // 获取鼠标世界坐标
+        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        
+        // 计算从玩家指向鼠标的向量
+        Vector2 aimDirection = (mousePos - (Vector2)transform.position).normalized;
+
+        // 计算目标角度
+        float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+
+        // 方式A: 瞬间朝向 (适合射击游戏)
+        weaponPivot.rotation = Quaternion.Euler(0, 0, targetAngle);
+
+        // 方式B: 平滑旋转 (如果希望武器转动有延迟感，取消下面注释，注释掉上面一行)
+        // Quaternion targetRotation = Quaternion.Euler(0, 0, targetAngle);
+        // weaponPivot.rotation = Quaternion.Slerp(weaponPivot.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+    }
+
+    // --- 射击逻辑 ---
+    void HandleShooting()
+    {
+        if (currentWeapon == null) return;
+
+        // 支持点击射击 或 按住连射
+        if (Input.GetMouseButton(0)) 
         {
-            Shoot();
-            nextFireTime = Time.time + fireRate;
+            currentWeapon.TryShoot();
         }
     }
 
-    void FixedUpdate()
+    // --- 武器切换逻辑 ---
+      public void SwitchWeapon(int index)
     {
-        // 物理移动
-        rb.velocity = movement * moveSpeed;
-    }
-
-    void Shoot()
-    {
-        if (bulletPrefab != null && firePoint != null)
+        if (index < 0 || index >= availableWeapons.Count) 
         {
-            // 实例化子弹
-            Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+            Debug.LogWarning($"无效的武器索引: {index}");
+            return;
+        }
+
+        // 禁用当前所有武器
+        foreach (var wp in availableWeapons)
+        {
+            if(wp != null) wp.gameObject.SetActive(false);
+        }
+
+        // 启用新武器
+        currentWeapon = availableWeapons[index];
+        if (currentWeapon != null)
+        {
+            currentWeapon.gameObject.SetActive(true);
             
-            // TODO: 这里稍后可以添加射击音效和屏幕震动调用
-            // AudioManager.Instance.PlayShootSound();
-            // ScreenShake.Instance.TriggerShake(0.1f, 0.2f);
-        }
-        else
-        {
-            Debug.LogWarning("未分配子弹预制体或发射点！");
+            // 强制重置位置，确保它吸附在 Pivot 上
+            currentWeapon.transform.SetParent(weaponPivot, false);
+            currentWeapon.transform.localPosition = Vector3.zero;
+            currentWeapon.transform.localRotation = Quaternion.identity;
+            
+            Debug.Log($"切换武器至: {currentWeapon.weaponName}");
         }
     }
 
+
+    // --- 死亡逻辑 ---
+    // 当怪物碰到玩家时调用
+    public void TakeDamage(int damage)
+    {
+        if (isDead) return;
+
+        currentHealth -= damage;
+        
+        // 闪红反馈
+        if (sr != null)
+        {
+            sr.color = Color.red;
+            Invoke(nameof(ResetColor), 0.1f);
+        }
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    void ResetColor()
+    {
+        if (!isDead && sr != null) sr.color = originalColor;
+    }
+
+    void Die()
+    {
+        isDead = true;
+        rb.velocity = Vector2.zero; // 停止移动
+        playerCollider.enabled = false; // 关闭碰撞，防止重复触发死亡
+        
+        Debug.Log("玩家死亡！游戏结束。");
+
+        // 通知 GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.GameOver();
+        }
+
+        // 可选：播放死亡动画/粒子，然后隐藏玩家
+        // gameObject.SetActive(false); 
+    }
+
+    // 碰撞检测：碰到怪物直接死
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (isDead) return;
+
+        // 假设怪物都有 "Enemy" Tag 或者 Enemy 组件
+        if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.GetComponent<Enemy>() != null)
+        {
+            TakeDamage(999); // 直接秒杀
+        }
+    }
+    
+    // 也可以使用 OnTriggerEnter2D，取决于你的 Collider 设置 (IsTrigger)
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (isDead) return;
+        if (other.CompareTag("Enemy") || other.GetComponent<Enemy>() != null)
+        {
+            TakeDamage(999);
+        }
+    }
 }
