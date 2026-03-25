@@ -1,46 +1,73 @@
 using UnityEngine;
-using System.Collections.Generic;
-
-public enum WeaponType { MachineGun, Shotgun }
 
 public class Weapon : MonoBehaviour
 {
-    [Header("武器基础设置")]
-    public WeaponType weaponType = WeaponType.MachineGun;
-    public string weaponName;
+        // 【新增】补回这个变量，解决 PlayerController 的报错
+    [Header("武器基础")]
+    public string weaponName = "Default Weapon"; 
     
-    [Tooltip("射击间隔 (秒)。散弹枪指两次喷发之间的间隔，机枪指连发间隔")]
-    public float fireRate = 0.1f; 
+    [Header("关联物体")]
+    // 【重要】这里不再是 firePoint，而是武器的根节点（即位于玩家手上的那个空物体）
+    public Transform weaponPivot; 
     
-    public int damagePerBullet = 5; // 单颗子弹伤害
+    // 枪口依然需要，用于生成子弹
+    public Transform firePoint;
+
+    [Header("设置")]
+    public bool autoAim = true;
+    public float fireRate = 0.2f;
+    public int damagePerBullet = 10;
     public float bulletSpeed = 15f;
-    public GameObject bulletPrefab; 
+    public string bulletPoolTag = "Default";
 
-    [Header("散弹枪专属设置")]
-    [Tooltip("仅当类型为散弹枪时生效：一次发射多少颗子弹")]
-    public int shotgunPelletCount = 5;
-    [Tooltip("仅当类型为散弹枪时生效：散射角度 (度)，例如 30 表示左右各 15 度")]
-    public float shotgunSpreadAngle = 30f;
-
-    [Header("发射点")]
-    public Transform firePoint; 
-
-    [Header("特效")]
-    public ParticleSystem muzzleFlash;
-    public AudioClip shootSound;
+    [Header("霰弹枪")]
+    public bool isShotgun = false;
+    public int shotgunPellets = 5;
+    public float spreadAngle = 15f;
 
     private float nextFireTime = 0f;
-    private AudioSource audioSrc;
+    private Camera mainCamera;
 
-    void Awake()
+    void Start()
     {
-        audioSrc = GetComponent<AudioSource>();
-        if (firePoint == null) firePoint = transform;
+        mainCamera = Camera.main;
         
-        // 根据类型自动命名方便调试
-        if (string.IsNullOrEmpty(weaponName))
+        // 自动查找缺失的引用，防止报错
+        if (weaponPivot == null) weaponPivot = transform; // 如果没填，默认就是当前物体
+        if (firePoint == null)
         {
-            weaponName = weaponType.ToString();
+            firePoint = weaponPivot.GetComponentInChildren<Transform>(); // 尝试找子物体
+            Debug.LogWarning("[Weapon] FirePoint not assigned, using first child as fallback.");
+        }
+    }
+
+    void Update()
+    {
+        if (weaponPivot == null || mainCamera == null) return;
+
+        // 1. 【核心逻辑】让武器围绕玩家旋转并指向鼠标
+        if (autoAim)
+        {
+            Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+            
+            // 获取武器枢轴点的世界坐标（即玩家的手部位置）
+            Vector2 pivotPos = weaponPivot.position;
+            
+            // 计算从手部到鼠标的向量
+            Vector2 direction = mouseWorldPos - pivotPos;
+            
+            // 计算角度
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            
+            // 【关键】旋转的是 weaponPivot，而不是 firePoint
+            // 这样整个武器（包括图片）都会跟着转，且围绕玩家手部旋转
+            weaponPivot.eulerAngles = new Vector3(0, 0, angle);
+        }
+
+        // 2. 射击输入
+        if (Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space))
+        {
+            TryShoot();
         }
     }
 
@@ -55,76 +82,57 @@ public class Weapon : MonoBehaviour
 
     void Shoot()
     {
-        // 播放特效
-        if (muzzleFlash != null) muzzleFlash.Play();
-        if (shootSound != null && audioSrc != null)
-        {
-            // 如果是散弹枪，声音可能更沉闷，可以在此处做差异化处理，暂时统一播放
-            audioSrc.PlayOneShot(shootSound);
-        }
+        if (firePoint == null) return;
 
-        if (bulletPrefab == null)
-        {
-            Debug.LogError($"武器 {weaponName} 缺少子弹预制体!");
-            return;
-        }
+        GameObject owner = GetPlayerOwner();
 
-        // --- 核心逻辑分支 ---
-        if (weaponType == WeaponType.MachineGun)
+        // 发射方向依然是 firePoint 的 right (因为 firePoint 是 weaponPivot 的子物体，它会跟随旋转)
+        Vector2 shootDirection = firePoint.right;
+
+        if (isShotgun)
         {
-            // 1. 机枪模式：发射单颗子弹
-            SpawnBullet(firePoint.rotation);
+            for (int i = 0; i < shotgunPellets; i++)
+            {
+                float angleOffset = Random.Range(-spreadAngle, spreadAngle);
+                float currentAngle = Mathf.Atan2(shootDirection.y, shootDirection.x) * Mathf.Rad2Deg;
+                float finalAngle = currentAngle + angleOffset;
+                
+                Vector2 finalDir = new Vector2(Mathf.Cos(finalAngle * Mathf.Deg2Rad), Mathf.Sin(finalAngle * Mathf.Deg2Rad));
+                SpawnBullet(firePoint.position, finalDir, owner);
+            }
         }
-        else if (weaponType == WeaponType.Shotgun)
+        else
         {
-            // 2. 散弹枪模式：发射多颗扇形子弹
-            SpawnShotgunBurst();
+            SpawnBullet(firePoint.position, shootDirection, owner);
         }
     }
 
-    // 发射单颗子弹
-    void SpawnBullet(Quaternion rotation)
+    void SpawnBullet(Vector2 pos, Vector2 direction, GameObject owner)
     {
-        GameObject bulletObj = Instantiate(bulletPrefab, firePoint.position, rotation);
-        InitBullet(bulletObj);
+        if (BulletPoolManager.Instance == null) return;
+
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        Quaternion rot = Quaternion.Euler(0, 0, angle);
+
+        BulletPoolManager.Instance.SpawnBullet(
+            bulletPoolTag,
+            pos,
+            rot,
+            damagePerBullet,
+            bulletSpeed,
+            owner
+        );
     }
 
-    // 发射散弹 burst
-    void SpawnShotgunBurst()
+    GameObject GetPlayerOwner()
     {
-        float startAngle = -shotgunSpreadAngle / 2f;
-        float angleStep = shotgunSpreadAngle / (shotgunPelletCount - 1); // 如果只有1颗，步长为0
-
-        // 特殊情况：如果只有1颗，直接打中间
-        if (shotgunPelletCount <= 1)
+        // 向上查找直到找到 PlayerController
+        Transform current = transform;
+        while (current != null)
         {
-            SpawnBullet(firePoint.rotation);
-            return;
+            if (current.GetComponent<PlayerController>() != null) return current.gameObject;
+            current = current.parent;
         }
-
-        for (int i = 0; i < shotgunPelletCount; i++)
-        {
-            // 计算当前子弹的角度
-            float currentAngle = startAngle + (angleStep * i);
-            
-            // 基于枪口朝向旋转当前角度
-            Quaternion spreadRotation = firePoint.rotation * Quaternion.Euler(0, 0, currentAngle);
-            
-            SpawnBullet(spreadRotation);
-        }
-    }
-
-    void InitBullet(GameObject bulletObj)
-    {
-        Bullet bulletScript = bulletObj.GetComponent<Bullet>();
-        if (bulletScript != null)
-        {
-            // 获取玩家引用 (假设武器的父父物体是 Player，或者通过其他方式传递)
-            // 这里简单处理：向上查找 PlayerController
-            PlayerController player = transform.root.GetComponent<PlayerController>();
-            if (player == null) player = transform.parent.parent.GetComponent<PlayerController>();
-            
-            bulletScript.Init(damagePerBullet, bulletSpeed, player != null ? player.gameObject : gameObject);
-        }
+        return gameObject;
     }
 }

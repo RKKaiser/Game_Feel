@@ -1,69 +1,125 @@
 using UnityEngine;
+using System;
 
 public class Bullet : MonoBehaviour
 {
-    [HideInInspector] public int damage;
-    [HideInInspector] public float speed;
-    [HideInInspector] public GameObject owner; // 记录是谁发射的，防止打到自己
+    [Header("调试")]
+    public bool debugMode = false;
 
-    private Rigidbody2D rb;
-    private float lifeTime = 3f; // 子弹最大存在时间
-    private float timer = 0f;
+    private int damage;
+    private float speed;
+    private GameObject owner;
+    private Action<Bullet> returnToPoolAction;
+    private Vector2 velocity;
+    private bool isActive = false;
+    
+    private Rigidbody2D rb; // 缓存组件
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-    }
-
-    // 初始化方法 (类似对象池的 SetStats)
-    public void Init(int dmg, float spd, GameObject player)
-    {
-        damage = dmg;
-        speed = spd;
-        owner = player;
-        timer = 0f;
-        
-        // 确保刚激活时速度方向正确 (依赖发射时的 Rotation)
-        rb.velocity = transform.right * speed; 
-    }
-
-    void Update()
-    {
-        timer += Time.deltaTime;
-        if (timer >= lifeTime)
+        if (rb == null)
         {
-            ReturnToPool();
+            Debug.LogError("[Bullet] Missing Rigidbody2D! Adding one automatically.");
+            rb = gameObject.AddComponent<Rigidbody2D>();
         }
+        
+        // 关键设置：防止物理引擎自动旋转子弹
+        rb.freezeRotation = true; 
+        rb.gravityScale = 0;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
+    void OnTriggerEnter2D(Collider2D other)
     {
-        // 如果碰到发射者自己，忽略
-        if (collision.gameObject == owner) return;
+        if (!isActive) return;
 
-        // 碰到敌人
-        Enemy enemy = collision.gameObject.GetComponent<Enemy>();
+        // 忽略自己人
+        if (other.gameObject == owner) return;
+        if (owner != null && other.transform.IsChildOf(owner.transform)) return;
+
+        // 伤害逻辑
+        Enemy enemy = other.GetComponent<Enemy>();
+        if (enemy == null) enemy = other.GetComponentInParent<Enemy>();
+
         if (enemy != null)
         {
             enemy.TakeDamage(damage);
-            ReturnToPool();
-            return;
+            if(debugMode) Debug.Log($"Hit {enemy.name}");
         }
 
-        // 碰到墙壁或其他障碍物
-        // 可以根据 Tag 判断是否销毁
-        if (!collision.gameObject.CompareTag("Player")) 
+        // 击中任何非自己人的物体都回收
+        ReturnToPool();
+    }
+
+    public void InitData(int dmg, float spd, GameObject own, Action<Bullet> onReturn)
+    {
+        damage = dmg;
+        speed = spd;
+        owner = own;
+        returnToPoolAction = onReturn;
+        isActive = false;
+    }
+
+    public void Activate(Vector2 pos, Quaternion rot, Vector2 vel)
+    {
+        isActive = true;
+        transform.position = pos;
+        transform.rotation = rot;
+        velocity = vel;
+        gameObject.SetActive(true);
+
+        // 【核心修复】直接设置 Rigidbody 的速度，不再使用 Translate
+        if (rb != null)
         {
-            ReturnToPool();
+            rb.velocity = velocity;
+            rb.angularVelocity = 0; // 清除旋转速度
+            rb.simulated = true;
+            rb.WakeUp(); // 确保唤醒
         }
+    }
+
+    public void Deactivate()
+    {
+        isActive = false;
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0;
+            rb.simulated = false; // 停止物理模拟以节省性能
+            rb.Sleep();
+        }
+        gameObject.SetActive(false);
     }
 
     void ReturnToPool()
     {
-        // 如果有子弹对象池管理器，在这里调用回收
-        // BulletPool.Instance.Return(this);
-        
-        // 临时方案：直接销毁 (建议后续也做成对象池)
-        Destroy(gameObject);
+        if (!isActive) return;
+        isActive = false;
+
+        if (returnToPoolAction != null)
+        {
+            returnToPoolAction.Invoke(this);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    // 【重要】删除了 Update 中的 transform.Translate 逻辑！
+    // 现在移动完全由 Rigidbody2D 物理引擎接管
+    void Update()
+    {
+        if (!isActive) return;
+
+        // 仅用于保底回收逻辑
+        if (Camera.main != null)
+        {
+            if (Vector2.Distance(transform.position, Camera.main.transform.position) > 50f)
+            {
+                ReturnToPool();
+            }
+        }
     }
 }
