@@ -1,25 +1,29 @@
 using UnityEngine;
+using System; // 引入 System 以使用 Action 事件
 using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 public class PlayerController : MonoBehaviour
 {
+    // --- 新增：死亡事件 (观察者模式) ---
+    // 当玩家死亡时触发，不包含任何具体逻辑，只通知“发生了死亡”
+    public static event Action OnPlayerDied;
+
     [Header("移动设置")]
     public float moveSpeed = 5f;
-    public float rotationSpeed = 10f; // 如果需要平滑旋转可以启用，否则直接朝向鼠标
+    public float rotationSpeed = 10f;
 
     [Header("武器设置")]
-    public Transform weaponPivot; // 武器挂载点（子物体）
-    public List<Weapon> availableWeapons = new List<Weapon>(); // 可选武器列表
+    public Transform weaponPivot;
+    public List<Weapon> availableWeapons = new List<Weapon>();
     private Weapon currentWeapon;
 
     [Header("状态")]
     public bool isDead = false;
-    public int maxHealth = 1; // 设定为1，碰到即死
+    public int maxHealth = 1;
     private int currentHealth;
 
-    // 组件缓存
     private Rigidbody2D rb;
     private Collider2D playerCollider;
     private SpriteRenderer sr;
@@ -35,7 +39,6 @@ public class PlayerController : MonoBehaviour
         currentHealth = maxHealth;
         isDead = false;
 
-        // 初始化第一个武器，或者通过外部调用 SwitchWeapon
         if (availableWeapons.Count > 0 && currentWeapon == null)
         {
             SwitchWeapon(0);
@@ -51,92 +54,56 @@ public class PlayerController : MonoBehaviour
         HandleShooting();
     }
 
-    // --- 移动逻辑 (WASD) ---
     void HandleMovement()
     {
-        float moveX = Input.GetAxisRaw("Horizontal"); // A/D
-        float moveY = Input.GetAxisRaw("Vertical");   // W/S
-
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveY = Input.GetAxisRaw("Vertical");
         Vector2 moveDirection = new Vector2(moveX, moveY).normalized;
-
-        // 直接设置速度，忽略物理惯性（手感更跟手）
         rb.velocity = moveDirection * moveSpeed;
     }
 
-    // --- 瞄准逻辑 (鼠标) ---
     void HandleAiming()
     {
         if (weaponPivot == null) return;
-
-        // 获取鼠标世界坐标
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        
-        // 计算从玩家指向鼠标的向量
         Vector2 aimDirection = (mousePos - (Vector2)transform.position).normalized;
-
-        // 计算目标角度
         float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-
-        // 方式A: 瞬间朝向 (适合射击游戏)
         weaponPivot.rotation = Quaternion.Euler(0, 0, targetAngle);
-
-        // 方式B: 平滑旋转 (如果希望武器转动有延迟感，取消下面注释，注释掉上面一行)
-        // Quaternion targetRotation = Quaternion.Euler(0, 0, targetAngle);
-        // weaponPivot.rotation = Quaternion.Slerp(weaponPivot.rotation, targetRotation, Time.deltaTime * rotationSpeed);
     }
 
-    // --- 射击逻辑 ---
     void HandleShooting()
     {
         if (currentWeapon == null) return;
-
-        // 支持点击射击 或 按住连射
         if (Input.GetMouseButton(0)) 
         {
             currentWeapon.TryShoot();
         }
     }
 
-    // --- 武器切换逻辑 ---
-      public void SwitchWeapon(int index)
+    public void SwitchWeapon(int index)
     {
-        if (index < 0 || index >= availableWeapons.Count) 
-        {
-            Debug.LogWarning($"无效的武器索引: {index}");
-            return;
-        }
+        if (index < 0 || index >= availableWeapons.Count) return;
 
-        // 禁用当前所有武器
         foreach (var wp in availableWeapons)
         {
             if(wp != null) wp.gameObject.SetActive(false);
         }
 
-        // 启用新武器
         currentWeapon = availableWeapons[index];
         if (currentWeapon != null)
         {
             currentWeapon.gameObject.SetActive(true);
-            
-            // 强制重置位置，确保它吸附在 Pivot 上
             currentWeapon.transform.SetParent(weaponPivot, false);
             currentWeapon.transform.localPosition = Vector3.zero;
             currentWeapon.transform.localRotation = Quaternion.identity;
-            
-            Debug.Log($"切换武器至: {currentWeapon.weaponName}");
         }
     }
 
-
-    // --- 死亡逻辑 ---
-    // 当怪物碰到玩家时调用
     public void TakeDamage(int damage)
     {
         if (isDead) return;
-
         currentHealth -= damage;
-        
-        // 闪红反馈
+
         if (sr != null)
         {
             sr.color = Color.red;
@@ -156,35 +123,30 @@ public class PlayerController : MonoBehaviour
 
     void Die()
     {
-        isDead = true;
-        rb.velocity = Vector2.zero; // 停止移动
-        playerCollider.enabled = false; // 关闭碰撞，防止重复触发死亡
+        if (isDead) return;
         
-        Debug.Log("玩家死亡！游戏结束。");
+        isDead = true;
+        rb.velocity = Vector2.zero;
+        if(playerCollider != null) playerCollider.enabled = false;
 
-        // 通知 GameManager
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.GameOver();
-        }
+        Debug.Log("玩家死亡：触发死亡事件。");
 
-        // 可选：播放死亡动画/粒子，然后隐藏玩家
+        // --- 核心修改：只触发事件，不执行任何游戏逻辑 ---
+        OnPlayerDied?.Invoke();
+        
+        // 可选：播放死亡动画或粒子
         // gameObject.SetActive(false); 
     }
 
-    // 碰撞检测：碰到怪物直接死
     void OnCollisionEnter2D(Collision2D collision)
     {
         if (isDead) return;
-
-        // 假设怪物都有 "Enemy" Tag 或者 Enemy 组件
         if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.GetComponent<Enemy>() != null)
         {
-            TakeDamage(999); // 直接秒杀
+            TakeDamage(999);
         }
     }
-    
-    // 也可以使用 OnTriggerEnter2D，取决于你的 Collider 设置 (IsTrigger)
+
     void OnTriggerEnter2D(Collider2D other)
     {
         if (isDead) return;
@@ -192,5 +154,12 @@ public class PlayerController : MonoBehaviour
         {
             TakeDamage(999);
         }
+    }
+    
+    // 清理静态事件订阅，防止内存泄漏（虽然单例生命周期长，但这是好习惯）
+    void OnDestroy()
+    {
+        // 如果有任何针对此实例的订阅需要清理，在这里做
+        // 静态事件通常不需要在实例销毁时清理，除非订阅者也是静态且长期存在的
     }
 }
