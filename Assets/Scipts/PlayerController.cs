@@ -64,13 +64,51 @@ public class PlayerController : MonoBehaviour
 
     void HandleAiming()
     {
+        // 如果没有挂载 Pivot 或者当前没有激活的武器，则不执行
         if (weaponPivot == null) return;
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 aimDirection = (mousePos - (Vector2)transform.position).normalized;
-        float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-        weaponPivot.rotation = Quaternion.Euler(0, 0, targetAngle);
-    }
 
+        // 1. 获取鼠标世界坐标
+        Vector3 mouseScreenPos = Input.mousePosition;
+        // 修正 Z 轴，确保 2D 坐标转换正确 (假设相机正交且垂直于屏幕)
+        float zDistance = -Camera.main.transform.position.z; 
+        mouseScreenPos.z = zDistance;
+        Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(mouseScreenPos);
+
+        // 2. 计算从玩家中心到鼠标的方向向量
+        Vector2 aimDirection = (mouseWorldPos - (Vector2)transform.position).normalized;
+
+        // 防止方向向量为零导致后续计算错误
+        if (aimDirection.sqrMagnitude > 0.001f)
+        {
+            // 3. 计算目标角度 (弧度转角度)
+            float targetAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+
+            // --- 核心逻辑开始 ---
+
+            // A. 定义武器围绕玩家旋转的半径 (根据手感调整，例如 1.5 或 2.0)
+            float weaponRadius = 1.5f;
+
+            // B. 计算 WeaponPivot 的目标世界位置
+            // 公式：玩家位置 + (归一化方向 * 半径)
+            // 这确保了 Pivot 永远在玩家周围的圆周上
+            Vector2 targetPosition = (Vector2)transform.position + aimDirection * weaponRadius;
+
+            // C. 应用变换到 WeaponPivot
+            // 1. 设置位置 (实现公转)
+            weaponPivot.position = targetPosition;
+            
+            // 2. 设置旋转 (实现指向鼠标)
+            // 因为 Weapon 是 Pivot 的子物体且 LocalPos 为 (0,0,0)，
+            // Pivot 旋转时，Weapon 会跟着转到正确的朝向
+            weaponPivot.rotation = Quaternion.Euler(0, 0, targetAngle);
+
+            // --- 核心逻辑结束 ---
+            
+            // [可选] 调试绘制：在 Scene 视图画出半径圆和射线，方便观察
+            // Debug.DrawLine(transform.position, (Vector3)targetPosition, Color.yellow);
+            // Debug.DrawRay((Vector3)targetPosition, aimDirection * 2f, Color.green);
+        }
+    }
     void HandleShooting()
     {
         if (currentWeapon == null) return;

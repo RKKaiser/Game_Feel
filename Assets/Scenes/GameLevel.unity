@@ -202,16 +202,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   weaponName: Shotgun
-  weaponPivot: {fileID: 0}
   firePoint: {fileID: 682387419}
-  autoAim: 1
+  isShotgun: 0
+  shotgunPellets: 5
+  spreadAngle: 15
   fireRate: 1
   damagePerBullet: 5
   bulletSpeed: 15
   bulletPoolTag: Shotgun
-  isShotgun: 0
-  shotgunPellets: 5
-  spreadAngle: 15
 --- !u!212 &202490976
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1305,16 +1303,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   weaponName: MachineGun
-  weaponPivot: {fileID: 0}
   firePoint: {fileID: 2058628667}
-  autoAim: 1
+  isShotgun: 0
+  shotgunPellets: 5
+  spreadAngle: 15
   fireRate: 0.1
   damagePerBullet: 5
   bulletSpeed: 15
   bulletPoolTag: Shotgun
-  isShotgun: 0
-  shotgunPellets: 5
-  spreadAngle: 15
 --- !u!212 &1814462681
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1776,7 +1772,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58762178b8c7f674c970c2caa9ced138, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentState: 0
+  currentState: 1
   currentScore: 0
 --- !u!4 &2051157735
 Transform:
