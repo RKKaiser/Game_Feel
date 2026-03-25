@@ -1979,8 +1979,8 @@ MonoBehaviour:
   turtlePrefab: {fileID: 4224131362653471544, guid: 0bc22abcded242a4592b00e87e378a75, type: 3}
   initialPoolSize: 20
   growthCoefficient: 0.05
-  stage2StartTime: 60
-  stage3StartTime: 180
+  stage2StartTime: 30
+  stage3StartTime: 90
   gameTime: 0
   currentStage: 1
 --- !u!4 &1339054002
