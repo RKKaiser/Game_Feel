@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 33592055}
   - component: {fileID: 33592054}
   m_Layer: 5
-  m_Name: "\u5B58\u6D3B\u65F6\u95F4"
+  m_Name: "\u6740\u654C\u6570"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1121,7 +1121,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdadeda41c008e447bdb92fc1a8adf14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  survivalTimeText: {fileID: 33592054}
+  killCountText: {fileID: 33592054}
   nameInput: {fileID: 711226860}
   submitButton: {fileID: 1086221417}
 --- !u!114 &869016279
@@ -3248,6 +3248,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentState: 1
   currentScore: 0
+  killCount: 0
 --- !u!4 &2051157735
 Transform:
   m_ObjectHideFlags: 0

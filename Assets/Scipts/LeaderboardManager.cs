@@ -1,4 +1,3 @@
-// LeaderboardManager.cs
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +10,6 @@ public class LeaderboardManager : MonoBehaviour
 
     private List<ScoreEntry> entries = new List<ScoreEntry>();
 
-    // 单例
     public static LeaderboardManager Instance { get; private set; }
 
     private void Awake()
@@ -26,9 +24,6 @@ public class LeaderboardManager : MonoBehaviour
         Load();
     }
 
-    /// <summary>
-    /// 加载本地数据
-    /// </summary>
     private void Load()
     {
         if (PlayerPrefs.HasKey(SaveKey))
@@ -44,12 +39,9 @@ public class LeaderboardManager : MonoBehaviour
         {
             entries = new List<ScoreEntry>();
         }
-        SortAndTrim();  // 保证数据有序且不超限
+        SortAndTrim();
     }
 
-    /// <summary>
-    /// 保存数据到本地
-    /// </summary>
     private void Save()
     {
         Wrapper wrapper = new Wrapper { entries = entries };
@@ -59,41 +51,32 @@ public class LeaderboardManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 添加新分数
+    /// 添加新分数（按杀敌数排序）
     /// </summary>
-    public void AddScore(string playerName, float survivalTime)
+    public void AddScore(string playerName, int killCount)
     {
-        entries.Add(new ScoreEntry(playerName, survivalTime));
+        entries.Add(new ScoreEntry(playerName, killCount));
         SortAndTrim();
         Save();
     }
 
-    /// <summary>
-    /// 按存活时长降序排序，并保留前 maxEntries 条
-    /// </summary>
     private void SortAndTrim()
     {
-        entries = entries.OrderByDescending(e => e.survivalTime).Take(maxEntries).ToList();
+        // 按杀敌数降序排序，保留前 maxEntries 条
+        entries = entries.OrderByDescending(e => e.killCount).Take(maxEntries).ToList();
     }
 
-    /// <summary>
-    /// 获取排行榜列表（只读）
-    /// </summary>
     public List<ScoreEntry> GetLeaderboard()
     {
         return entries;
     }
 
-    /// <summary>
-    /// 清除所有数据（调试用）
-    /// </summary>
     public void Clear()
     {
         entries.Clear();
         Save();
     }
 
-    // 辅助包装类，用于序列化 List
     [System.Serializable]
     private class Wrapper
     {

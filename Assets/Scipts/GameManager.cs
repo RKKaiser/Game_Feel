@@ -19,8 +19,9 @@ public class GameManager : MonoBehaviour
     public event Action<int> OnKillCountChanged; // 新增：杀敌数变化事件
     public event Action OnGameStarted; 
     public event Action OnGameOver; 
-    public event Action OnReturnToMainMenu; 
+    public event Action OnReturnToMainMenu;
 
+    private GameOverUI gameOverUI;
     void Awake() 
     {
         // 单例模式：防止重复创建
@@ -42,23 +43,31 @@ public class GameManager : MonoBehaviour
     } 
 
     // --- 新增：处理死亡逻辑的核心方法 ---
-    private void HandlePlayerDeath() 
-    {
-        if (currentState == GameState.GameOver || currentState == GameState.Paused) 
-        {
-            return; // 防止重复触发
-        }
-        Debug.Log("[GameManager] 接收到玩家死亡信号，正在处理游戏结束流程..."); 
-        
-        // 1. 暂停时间 (冻结所有物理和 Update 逻辑)
-        Time.timeScale = 0f; 
-        
-        // 2. 切换状态
-        currentState = GameState.GameOver; 
-        
-        // 3. 通知 UI 显示结算面板
-        OnGameOver?.Invoke(); 
-    } 
+    private void HandlePlayerDeath()
+{
+    if (currentState == GameState.GameOver || currentState == GameState.Paused)
+        return;
+    Debug.Log("[GameManager] 接收到玩家死亡信号，正在处理游戏结束流程...");
+
+    // 1. 暂停时间
+    Time.timeScale = 0f;
+
+    // 2. 切换状态
+    currentState = GameState.GameOver;
+
+    // 3. 获取当前杀敌数并显示结算面板
+    int finalKills = killCount;
+    // 尝试查找场景中的 GameOverUI 组件
+    if (gameOverUI == null)
+        gameOverUI = FindObjectOfType<GameOverUI>();
+    if (gameOverUI != null)
+        gameOverUI.Show(finalKills);
+    else
+        Debug.LogError("[GameManager] 场景中找不到 GameOverUI 组件！");
+
+    // 4. 通知其他 UI 组件（可选）
+    OnGameOver?.Invoke();
+}
 
     public void StartGame(string sceneName) 
     {

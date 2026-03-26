@@ -394,7 +394,7 @@ GameObject:
   - component: {fileID: 6734027645068672092}
   - component: {fileID: 8580294938958608613}
   m_Layer: 5
-  m_Name: TimeText
+  m_Name: KillText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

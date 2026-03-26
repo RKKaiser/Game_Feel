@@ -1,62 +1,47 @@
-// GameOverUI.cs
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class GameOverUI : MonoBehaviour
 {
-    [Header("UI 元素")]
-    public TextMeshProUGUI survivalTimeText; // 改为 TMP
-    public TMP_InputField nameInput;         // 输入框也建议使用 TMP 版本
-    public Button submitButton;       // 提交按钮
+    [Header("UI 元素 (TMP)")]
+    public TextMeshProUGUI killCountText;   // 显示本次杀敌数
+    public TMP_InputField nameInput;        // 昵称输入框
+    public Button submitButton;             // 提交按钮
 
-    private float currentSurvivalTime;  // 本次游戏时长
+    private int currentKillCount;           // 本次杀敌数
 
-    private void Start()
+    private void Awake()
     {
-        // 确保提交按钮监听
         submitButton.onClick.AddListener(OnSubmit);
-        // 初始隐藏
         gameObject.SetActive(false);
     }
 
     /// <summary>
-    /// 显示结束 UI，并传入本次存活时长
+    /// 显示结束 UI，并传入本次杀敌数
     /// </summary>
-    public void Show(float survivalTime)
+    public void Show(int killCount)
     {
-        currentSurvivalTime = survivalTime;
-        survivalTimeText.text = FormatTime(survivalTime);
-        nameInput.text = "";  // 清空输入框
+        currentKillCount = killCount;
+        killCountText.text = $"杀敌数：{killCount}";
+        nameInput.text = "";
         gameObject.SetActive(true);
     }
 
-    /// <summary>
-    /// 提交按钮回调
-    /// </summary>
     private void OnSubmit()
     {
         string playerName = nameInput.text.Trim();
         if (string.IsNullOrEmpty(playerName))
-        {
-            playerName = "无名勇士";  // 默认昵称
-        }
-        // 限制昵称长度（可选）
+            playerName = "无名螃蟹";
         if (playerName.Length > 12)
             playerName = playerName.Substring(0, 12);
 
-        // 保存分数
-        LeaderboardManager.Instance.AddScore(playerName, currentSurvivalTime);
+        // 保存到排行榜
+        LeaderboardManager.Instance.AddScore(playerName, currentKillCount);
 
-        // 关闭面板，然后可以切换回主界面或显示其他信息
         gameObject.SetActive(false);
-        // 例如：SceneManager.LoadScene("MainMenu");
-    }
 
-    private string FormatTime(float seconds)
-    {
-        int minutes = Mathf.FloorToInt(seconds / 60);
-        float remainingSeconds = seconds % 60;
-        return string.Format("{0}分{1:F1}秒", minutes, remainingSeconds);
+        // 可选：返回主菜单（例如通过 GameManager 返回）
+        GameManager.Instance.ReturnToMainMenu();
     }
 }

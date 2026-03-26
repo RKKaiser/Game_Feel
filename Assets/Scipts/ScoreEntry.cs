@@ -1,13 +1,12 @@
-// ScoreEntry.cs
 [System.Serializable]
 public class ScoreEntry
 {
     public string playerName;   // 玩家昵称
-    public float survivalTime;  // 存活时长（秒）
+    public int killCount;       // 杀敌数（用于排名）
 
-    public ScoreEntry(string name, float time)
+    public ScoreEntry(string name, int kills)
     {
         playerName = name;
-        survivalTime = time;
+        killCount = kills;
     }
 }
