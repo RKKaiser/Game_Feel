@@ -3,52 +3,60 @@ using System.Collections.Generic;
 
 /// <summary>
 /// 敌人生成器 & 对象池管理器
-/// 负责管理三种敌人的对象池、动态难度调整、生成逻辑
 /// </summary>
 public class EnemySpawner : MonoBehaviour
 {
     [Header("对象池设置")]
-    public int initialPoolSize = 15; // 初始池大小
-    public int poolExpandStep = 5;   // 扩容步长
-    public bool allowDynamicExpand = true; // 允许动态扩容
+    public int initialPoolSize = 15; 
+    public int poolExpandStep = 5;   
+    public bool allowDynamicExpand = true; 
 
     [Header("敌人预制体 (必须赋值)")]
     public GameObject crabPrefab;   // 寄居蟹
     public GameObject gullPrefab;   // 海鸥
     public GameObject turtlePrefab; // 海龟
 
-    [Header("生成区域控制")]
-    public float spawnRadius = 18f;       // 最大生成半径
-    public float minSpawnDistance = 10f;  // 最小生成距离 (防止贴脸)
-    public float bufferZone = 2f;         // 屏幕外缓冲距离
+    [Header("阶段控制 (时间秒数)")]
+    [Tooltip("第一阶段持续时间：只生成寄居蟹")]
+    public float stage1Duration = 60f; 
+    
+    [Tooltip("第二阶段持续时间：海鸥逐渐增多至与寄居蟹持平")]
+    public float stage2Duration = 120f; 
+    
+    [Tooltip("第三阶段持续时间：海龟逐渐增多至三者持平 (之后保持平衡)")]
+    public float stage3Duration = 180f;
 
-    [Header("生成频率与难度")]
-    public float baseSpawnInterval = 2.0f; // 基础生成间隔
-    public float minSpawnInterval = 0.3f;  // 最小生成间隔 (防止卡顿)
-    public float difficultyGrowthRate = 0.04f; // 难度增长系数
+    [Header("生成区域控制")]
+    public float spawnRadius = 18f;       
+    public float minSpawnDistance = 10f;  
+    public float bufferZone = 2f;         
+
+    [Header("生成频率")]
+    public float baseSpawnInterval = 2.0f; 
+    public float minSpawnInterval = 0.4f;  
+    public float difficultyGrowthRate = 0.03f; 
 
     // --- 内部数据结构 ---
-    
-    // 对象池字典: Key = Prefab, Value = Queue<PooledObject>
     private Dictionary<GameObject, Queue<GameObject>> pools = new Dictionary<GameObject, Queue<GameObject>>();
-    
-    // 实例映射字典: Key = Instance (GameObject), Value = Source Prefab (GameObject)
-    // 用于在回收时快速找到对应的池子，避免字符串匹配
     private Dictionary<GameObject, GameObject> instanceToPrefabMap = new Dictionary<GameObject, GameObject>();
 
     private Transform playerTransform;
     private Camera mainCamera;
-    private Vector2 lastPlayerPos;
     private float gameTime = 0f;
     private float currentSpawnInterval;
     private float nextSpawnTime = 0f;
 
+    // 阶段状态缓存
+    private int currentStage = 1;
+    private float crabWeight = 1f;
+    private float gullWeight = 0f;
+    private float turtleWeight = 0f;
+
     void Awake()
     {
         mainCamera = Camera.main;
-        if (mainCamera == null) Debug.LogError("[Spawner] 未找到主相机！");
-
-        // 初始化所有配置的预制体池
+        
+        // 初始化池子
         InitializePool(crabPrefab);
         InitializePool(gullPrefab);
         InitializePool(turtlePrefab);
@@ -59,7 +67,6 @@ public class EnemySpawner : MonoBehaviour
     void Start()
     {
         FindPlayer();
-        lastPlayerPos = playerTransform != null ? (Vector2)playerTransform.position : Vector2.zero;
     }
 
     void FindPlayer()
@@ -68,7 +75,7 @@ public class EnemySpawner : MonoBehaviour
         if (playerObj != null)
             playerTransform = playerObj.transform;
         else
-            Debug.LogWarning("[Spawner] 未找到玩家 (Tag: Player)，生成逻辑暂停。");
+            Debug.LogWarning("[Spawner] 未找到玩家，生成暂停。");
     }
 
     void Update()
@@ -81,61 +88,100 @@ public class EnemySpawner : MonoBehaviour
 
         gameTime += Time.deltaTime;
 
-        // 1. 动态计算生成间隔
-        // 公式: Interval = Max(MinInterval, BaseInterval / (1 + Rate * Time))
+        // 1. 更新阶段权重
+        UpdateSpawnWeights();
+
+        // 2. 动态计算生成间隔 (随时间加快)
         float difficultyMultiplier = 1f + (difficultyGrowthRate * gameTime);
         currentSpawnInterval = Mathf.Max(minSpawnInterval, baseSpawnInterval / difficultyMultiplier);
 
-        // 2. 触发生成
+        // 3. 触发生成
         if (Time.time >= nextSpawnTime)
         {
-            SpawnRandomEnemy();
+            SpawnEnemyByWeights();
             nextSpawnTime = Time.time + currentSpawnInterval;
         }
     }
 
     /// <summary>
-    /// 初始化特定预制体的对象池
+    /// 核心逻辑：根据当前时间计算三种敌人的生成权重
     /// </summary>
+    void UpdateSpawnWeights()
+    {
+        // 确定当前处于哪个时间段
+        float t1End = stage1Duration;
+        float t2End = stage1Duration + stage2Duration;
+        float t3End = stage1Duration + stage2Duration + stage3Duration;
+
+        if (gameTime < t1End)
+        {
+            // === 阶段 1: 只有寄居蟹 ===
+            currentStage = 1;
+            crabWeight = 1f;
+            gullWeight = 0f;
+            turtleWeight = 0f;
+        }
+        else if (gameTime < t2End)
+        {
+            // === 阶段 2: 寄居蟹 -> 海鸥 (线性过渡) ===
+            currentStage = 2;
+            float progress = (gameTime - t1End) / stage2Duration; // 0.0 ~ 1.0
+            
+            // 寄居蟹从 1.0 降到 0.5
+            crabWeight = Mathf.Lerp(1f, 0.5f, progress);
+            // 海鸥从 0.0 升到 0.5
+            gullWeight = Mathf.Lerp(0f, 0.5f, progress);
+            turtleWeight = 0f;
+        }
+        else if (gameTime < t3End)
+        {
+            // === 阶段 3: 前两者 -> 海龟 (线性过渡到三者持平) ===
+            currentStage = 3;
+            float progress = (gameTime - t2End) / stage3Duration; // 0.0 ~ 1.0
+            
+            // 目标都是 1/3 (约 0.333)
+            float targetWeight = 1f / 3f;
+
+            // 寄居蟹从 0.5 降到 0.333
+            crabWeight = Mathf.Lerp(0.5f, targetWeight, progress);
+            // 海鸥从 0.5 降到 0.333
+            gullWeight = Mathf.Lerp(0.5f, targetWeight, progress);
+            // 海龟从 0.0 升到 0.333
+            turtleWeight = Mathf.Lerp(0f, targetWeight, progress);
+        }
+        else
+        {
+            // === 阶段 3 之后: 保持三者持平 ===
+            currentStage = 3;
+            float targetWeight = 1f / 3f;
+            crabWeight = targetWeight;
+            gullWeight = targetWeight;
+            turtleWeight = targetWeight;
+        }
+    }
+
     void InitializePool(GameObject prefab)
     {
         if (prefab == null) return;
-
         Queue<GameObject> pool = new Queue<GameObject>();
-        
         for (int i = 0; i < initialPoolSize; i++)
         {
             CreatePooledObject(prefab, pool);
         }
-        
         pools[prefab] = pool;
-        Debug.Log($"[Spawner] 初始化池: {prefab.name}, 容量: {initialPoolSize}");
     }
 
-    /// <summary>
-    /// 创建单个池对象并加入队列
-    /// </summary>
     void CreatePooledObject(GameObject prefab, Queue<GameObject> pool)
     {
         GameObject obj = Instantiate(prefab, transform);
         obj.SetActive(false);
-        obj.name = prefab.name + "_Pool"; // 统一命名方便调试
-        
+        obj.name = prefab.name + "_Pool";
         pool.Enqueue(obj);
-        // 初始放入池子时，暂时不加入 instanceToPrefabMap，因为还没被取出使用
-        // 或者为了安全，也可以加入，但取出时会更新
     }
 
-    /// <summary>
-    /// 从池中获取敌人
-    /// </summary>
     GameObject GetFromPool(GameObject prefab)
     {
-        if (!pools.ContainsKey(prefab))
-        {
-            Debug.LogError($"[Spawner] 尝试从不存在的池子获取: {prefab.name}");
-            return null;
-        }
+        if (!pools.ContainsKey(prefab)) return null;
 
         Queue<GameObject> pool = pools[prefab];
         GameObject obj = null;
@@ -144,89 +190,57 @@ public class EnemySpawner : MonoBehaviour
         {
             obj = pool.Dequeue();
         }
+        else if (allowDynamicExpand)
+        {
+            Debug.Log($"[Spawner] 池 {prefab.name} 扩容 +{poolExpandStep}");
+            for (int i = 0; i < poolExpandStep; i++) CreatePooledObject(prefab, pool);
+            obj = pool.Dequeue();
+        }
         else
         {
-            // 池空，尝试扩容
-            if (allowDynamicExpand)
-            {
-                Debug.Log($"[Spawner] 池 {prefab.name} 耗尽，扩容 +{poolExpandStep}");
-                for (int i = 0; i < poolExpandStep; i++)
-                {
-                    CreatePooledObject(prefab, pool);
-                }
-                obj = pool.Dequeue();
-            }
-            else
-            {
-                Debug.LogWarning($"[Spawner] 池 {prefab.name} 耗尽且禁止扩容，跳过本次生成。");
-                return null;
-            }
+            return null;
         }
 
-        // 记录映射关系：这个实例是由哪个预制体生成的
-        // 即使是从池里拿出来的旧对象，其映射关系也应该更新确认（虽然理论上不会变）
         if (!instanceToPrefabMap.ContainsKey(obj))
-        {
             instanceToPrefabMap[obj] = prefab;
-        }
 
         return obj;
     }
 
-    /// <summary>
-    /// 回收敌人到池中 (由 Enemy 脚本调用)
-    /// </summary>
     public void ReturnEnemyToPool(Enemy enemy)
     {
         if (enemy == null || enemy.gameObject == null) return;
-
         GameObject enemyObj = enemy.gameObject;
 
-        // 1. 执行敌人自身的清理逻辑 (停止协程、重置物理等)
-        enemy.ReturnToPool();
+        enemy.ReturnToPool(); // 清理自身状态
 
-        // 2. 查找对应的预制体
         GameObject sourcePrefab;
         if (!instanceToPrefabMap.TryGetValue(enemyObj, out sourcePrefab))
         {
-            // 如果找不到映射（理论上不应该发生，除非手动Instantiate且未记录）
-            Debug.LogWarning($"[Spawner] 无法识别敌人 {enemyObj.name} 的来源预制体，尝试通过名称匹配...");
-            
-            // 降级方案：通过名称前缀匹配
             sourcePrefab = FindPrefabByName(enemyObj.name);
-            
             if (sourcePrefab == null)
             {
-                Debug.LogError($"[Spawner] 彻底丢失 {enemyObj.name} 的归属，直接销毁以防内存泄漏。");
                 Destroy(enemyObj);
                 return;
             }
         }
 
-        // 3. 放回对应的队列
         if (pools.ContainsKey(sourcePrefab))
         {
             pools[sourcePrefab].Enqueue(enemyObj);
-            // 注意：这里不需要 Remove from instanceToPrefabMap，因为下次取出时会复用或覆盖
-            // 保持映射可以加速下次回收
         }
         else
         {
-            Debug.LogError($"[Spawner] 找到了预制体引用 {sourcePrefab.name}，但池子字典中不存在！");
             enemyObj.SetActive(false);
             enemyObj.transform.SetParent(transform);
         }
     }
 
-    /// <summary>
-    /// 降级方案：通过名称查找预制体
-    /// </summary>
     GameObject FindPrefabByName(string instanceName)
     {
         string cleanName = instanceName.Replace("(Clone)", "").Trim();
-        // 移除可能的 _Pool 后缀
         if (cleanName.EndsWith("_Pool")) cleanName = cleanName.Substring(0, cleanName.Length - 5);
-
+        
         foreach (var prefab in pools.Keys)
         {
             if (prefab.name == cleanName) return prefab;
@@ -234,101 +248,82 @@ public class EnemySpawner : MonoBehaviour
         return null;
     }
 
-    void SpawnRandomEnemy()
+    /// <summary>
+    /// 根据计算出的权重随机生成敌人
+    /// </summary>
+    void SpawnEnemyByWeights()
     {
-        if (pools.Count == 0) return;
+        // 防止所有权重为0 (例如配置错误)
+        if (crabWeight <= 0 && gullWeight <= 0 && turtleWeight <= 0) return;
 
-        // 1. 确定生成权重 (随时间变化)
-        // 时间越久，海龟概率越高，寄居蟹概率越低
-        float turtleChance = Mathf.Clamp01(0.1f + (gameTime * 0.005f)); // 初始10%，随时间增加
-        float gullChance = 0.3f; // 固定30%
-        float crabChance = 1f - turtleChance - gullChance;
+        float totalWeight = crabWeight + gullWeight + turtleWeight;
+        float randomValue = Random.Range(0f, totalWeight);
 
         GameObject selectedPrefab = null;
-        float roll = Random.value;
 
-        if (roll < crabChance && crabPrefab != null)
+        // 轮盘赌选择
+        if (randomValue < crabWeight)
         {
             selectedPrefab = crabPrefab;
         }
-        else if (roll < crabChance + gullChance && gullPrefab != null)
+        else if (randomValue < crabWeight + gullWeight)
         {
             selectedPrefab = gullPrefab;
         }
-        else if (turtlePrefab != null)
+        else
         {
             selectedPrefab = turtlePrefab;
         }
-        else
+
+        // 防御性检查：如果选中的预制体没赋值 (例如阶段2选了海鸥但没拖入海鸥预制体)
+        if (selectedPrefab == null)
         {
-            // 如果选中的预制体没赋值，回退到任意可用的
-            if (crabPrefab != null) selectedPrefab = crabPrefab;
-            else if (gullPrefab != null) selectedPrefab = gullPrefab;
-            else if (turtlePrefab != null) selectedPrefab = turtlePrefab;
+            // 尝试回退到有权重且不为空的预制体
+            if (crabWeight > 0 && crabPrefab != null) selectedPrefab = crabPrefab;
+            else if (gullWeight > 0 && gullPrefab != null) selectedPrefab = gullPrefab;
+            else if (turtleWeight > 0 && turtlePrefab != null) selectedPrefab = turtlePrefab;
+            
+            if (selectedPrefab == null) return; // 实在没法生成就跳过
         }
 
-        if (selectedPrefab == null) return;
-
-        // 2. 获取对象
         GameObject enemyObj = GetFromPool(selectedPrefab);
         if (enemyObj == null) return;
 
-        // 3. 计算生成位置
         Vector2 spawnPos = GetRandomSpawnPosition();
-
-        // 4. 激活并设置
         enemyObj.transform.position = spawnPos;
         enemyObj.transform.rotation = Quaternion.identity;
         enemyObj.SetActive(true);
-        enemyObj.transform.SetParent(null); // 独立于 Spawner，方便管理
+        enemyObj.transform.SetParent(null);
 
-        // 5. 初始化数据 (应用难度成长)
         Enemy enemyScript = enemyObj.GetComponent<Enemy>();
         if (enemyScript != null)
         {
-            // 关键：传入当前游戏时间，让敌人自己计算属性
             enemyScript.ApplyScaling(gameTime);
-        }
-        else
-        {
-            Debug.LogError($"[Spawner] 生成的对象 {enemyObj.name} 缺少 Enemy 组件！");
         }
     }
 
-    /// <summary>
-    /// 计算随机生成位置
-    /// 逻辑：在以玩家为中心的环形区域内，且必须在摄像机视野外
-    /// </summary>
     Vector2 GetRandomSpawnPosition()
     {
         if (playerTransform == null || mainCamera == null) return Vector2.zero;
 
         Vector2 playerPos = (Vector2)playerTransform.position;
         
-        // 计算屏幕边界在世界坐标的位置，加上缓冲区
-        Vector2 screenCenter = mainCamera.WorldToViewportPoint(playerPos);
-        // 简单的近似：直接用半径判断，更精确的做法是计算视锥体边缘
-        // 这里采用：生成点距离玩家的距离 > max(屏幕对角线一半 + buffer, minSpawnDistance)
-        
         float cameraWidth = mainCamera.orthographicSize * mainCamera.aspect;
         float cameraHeight = mainCamera.orthographicSize;
-        float maxViewDist = Mathf.Sqrt(cameraWidth * cameraWidth + cameraHeight * cameraHeight) * 0.6f; // 视野内最大半径估算
+        float maxViewDist = Mathf.Sqrt(cameraWidth * cameraWidth + cameraHeight * cameraHeight) * 0.6f;
         
         float effectiveMinDist = Mathf.Max(minSpawnDistance, maxViewDist + bufferZone);
         float effectiveMaxDist = Mathf.Max(effectiveMinDist + 1f, spawnRadius);
 
         Vector2 result = playerPos;
         int attempts = 0;
-        int maxAttempts = 20;
-
-        while (attempts < maxAttempts)
+        
+        while (attempts < 20)
         {
             float angle = Random.Range(0f, 2f * Mathf.PI);
             float dist = Random.Range(effectiveMinDist, effectiveMaxDist);
-            
             Vector2 candidate = playerPos + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist;
 
-            // 检查是否被障碍物阻挡
             if (!IsPositionBlocked(candidate))
             {
                 result = candidate;
@@ -336,47 +331,37 @@ public class EnemySpawner : MonoBehaviour
             }
             attempts++;
         }
-
         return result;
     }
 
     bool IsPositionBlocked(Vector2 pos)
     {
-        // 检测障碍物层 (需要用户在 Project Settings 中设置 "Obstacle" Layer)
-        // 如果没设置，LayerMask.GetMask 返回 0，检测将失效（视为不阻挡）
         int obstacleLayer = LayerMask.GetMask("Obstacle", "Wall", "Ground");
-        if (obstacleLayer == 0) return false; 
-
-        Collider2D hit = Physics2D.OverlapCircle(pos, 0.5f, obstacleLayer);
-        return hit != null;
+        if (obstacleLayer == 0) return false;
+        return Physics2D.OverlapCircle(pos, 0.5f, obstacleLayer) != null;
     }
 
-    // --- 调试 Gizmos ---
     void OnDrawGizmosSelected()
     {
-        if (playerTransform == null)
+        Vector2 center = playerTransform ? (Vector2)playerTransform.position : transform.position;
+        
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(center, spawnRadius);
+        
+        Gizmos.color = Color.red;
+        float debugMin = minSpawnDistance; 
+        if(mainCamera != null && playerTransform != null)
         {
-            // 编辑器模式下如果没有玩家，用 Spawner 自身位置代替
-            Gizmos.DrawWireSphere(transform.position, spawnRadius);
-            Gizmos.DrawWireSphere(transform.position, minSpawnDistance);
-            return;
+             float camW = mainCamera.orthographicSize * mainCamera.aspect;
+             float camH = mainCamera.orthographicSize;
+             debugMin = Mathf.Max(minSpawnDistance, Mathf.Sqrt(camW*camW + camH*camH)*0.6f + bufferZone);
         }
+        Gizmos.DrawWireSphere(center, debugMin);
 
-        Vector2 pos = (Vector2)playerTransform.position;
-        
-        // 绘制有效生成环
-        Gizmos.color = new Color(1, 1, 0, 0.3f);
-        Gizmos.DrawWireSphere(pos, spawnRadius);
-        
-        // 绘制禁入区 (贴脸保护 + 屏幕缓冲)
-        float cameraWidth = mainCamera ? mainCamera.orthographicSize * mainCamera.aspect : 5f;
-        float cameraHeight = mainCamera ? mainCamera.orthographicSize : 5f;
-        float viewDist = Mathf.Sqrt(cameraWidth * cameraWidth + cameraHeight * cameraHeight) * 0.6f;
-        float debugMin = Mathf.Max(minSpawnDistance, viewDist + bufferZone);
-
-        Gizmos.color = new Color(1, 0, 0, 0.3f);
-        Gizmos.DrawWireSphere(pos, debugMin);
-        
-        Gizmos.DrawLine(pos, pos + Vector2.up * debugMin);
+        // 绘制当前阶段信息
+        GUIStyle style = new GUIStyle();
+        style.fontSize = 20;
+        style.normal.textColor = Color.white;
+        UnityEditor.Handles.Label((Vector3)center + Vector3.up * (spawnRadius + 2), $"Stage: {currentStage} | C:{crabWeight:F2} G:{gullWeight:F2} T:{turtleWeight:F2}", style);
     }
 }

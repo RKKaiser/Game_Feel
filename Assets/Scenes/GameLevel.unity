@@ -2011,6 +2011,9 @@ MonoBehaviour:
   crabPrefab: {fileID: 9062053334906473441, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
   gullPrefab: {fileID: 5580744352536116474, guid: 6b0ad6070682c6e41b9a2b4cfe1c16ac, type: 3}
   turtlePrefab: {fileID: 4224131362653471544, guid: 0bc22abcded242a4592b00e87e378a75, type: 3}
+  stage1Duration: 30
+  stage2Duration: 60
+  stage3Duration: 180
   spawnRadius: 18
   minSpawnDistance: 10
   bufferZone: 2
