@@ -9,6 +9,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: type
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: isTurtle
       value: 1
       objectReference: {fileID: 0}

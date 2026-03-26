@@ -287,6 +287,7 @@ Transform:
   m_Children:
   - {fileID: 1339054002}
   - {fileID: 814142368}
+  - {fileID: 1120741704}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &202490973
@@ -337,13 +338,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weaponName: Shotgun
   firePoint: {fileID: 682387419}
-  isShotgun: 0
-  shotgunPellets: 5
-  spreadAngle: 15
+  weaponType: 0
+  damage: 10
   fireRate: 1
-  damagePerBullet: 5
   bulletSpeed: 15
   bulletPoolTag: Shotgun
+  maxAmmo: 30
+  reloadTime: 1.5
+  shotgunPellets: 5
+  spreadAngle: 15
+  explosionRange: 3
 --- !u!212 &202490976
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1615,6 +1619,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1086221415}
   m_CullTransparentMesh: 1
+--- !u!1 &1120741703
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1120741704}
+  m_Layer: 0
+  m_Name: XPManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1120741704
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1120741703}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 92012548}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1128172041
 GameObject:
   m_ObjectHideFlags: 0
@@ -1970,19 +2005,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f0cd89f2e8cfe449761a8ac51561b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 1044779359}
-  spawnInterval: 1
-  minSpawnRange: 8
-  maxSpawnRange: 15
-  hermitCrabPrefab: {fileID: 9062053334906473441, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
-  seagullPrefab: {fileID: 5580744352536116474, guid: 6b0ad6070682c6e41b9a2b4cfe1c16ac, type: 3}
-  turtlePrefab: {fileID: 4224131362653471544, guid: 0bc22abcded242a4592b00e87e378a75, type: 3}
   initialPoolSize: 20
-  growthCoefficient: 0.05
-  stage2StartTime: 30
-  stage3StartTime: 90
-  gameTime: 0
-  currentStage: 1
+  poolExpandStep: 5
+  allowDynamicExpand: 1
+  crabPrefab: {fileID: 9062053334906473441, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+  gullPrefab: {fileID: 5580744352536116474, guid: 6b0ad6070682c6e41b9a2b4cfe1c16ac, type: 3}
+  turtlePrefab: {fileID: 4224131362653471544, guid: 0bc22abcded242a4592b00e87e378a75, type: 3}
+  spawnRadius: 18
+  minSpawnDistance: 10
+  bufferZone: 2
+  baseSpawnInterval: 2
+  minSpawnInterval: 0.3
+  difficultyGrowthRate: 0.04
 --- !u!4 &1339054002
 Transform:
   m_ObjectHideFlags: 0
@@ -2339,13 +2373,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weaponName: MachineGun
   firePoint: {fileID: 2058628667}
-  isShotgun: 0
-  shotgunPellets: 5
-  spreadAngle: 15
+  weaponType: 0
+  damage: 10
   fireRate: 0.1
-  damagePerBullet: 5
   bulletSpeed: 15
   bulletPoolTag: Shotgun
+  maxAmmo: 30
+  reloadTime: 1.5
+  shotgunPellets: 5
+  spreadAngle: 15
+  explosionRange: 3
 --- !u!212 &1814462681
 SpriteRenderer:
   m_ObjectHideFlags: 0
