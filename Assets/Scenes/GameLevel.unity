@@ -1410,17 +1410,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  minX: -10
-  maxX: 10
-  minY: -10
-  maxY: 10
-  useBoundary: 1
   weaponPivot: {fileID: 1948689314}
+  weaponRotationRadius: 2
   availableWeapons:
   - {fileID: 1814462680}
   - {fileID: 202490975}
   - {fileID: 901318304}
   isDead: 0
+  currentLevel: 1
+  currentXP: 0
+  weaponDamageMultiplier: 1
+  weaponFireRateMultiplier: 1
+  shotgunBoltCountBonus: 0
+  grenadeRadiusBonus: 0
 --- !u!61 &1044779356
 BoxCollider2D:
   m_ObjectHideFlags: 0
