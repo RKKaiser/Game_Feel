@@ -275,8 +275,7 @@ public class Enemy : MonoBehaviour
         // 由于文档未提供具体单例接口，此处打印日志，实际项目中请取消注释并调用对应单例
         Debug.Log($"[Enemy] {type} 死亡，提供经验: {currentExpValue}, 伤害值: {currentDamage}");
 
-        // 2. 播放死亡特效 (可选，需对象池管理粒子)
-        // ParticlePool.Instance.Spawn("DeathEffect", transform.position);
+        GameManager.Instance.AddKillCount(1);
 
         // 3. 回收到对象池
         if (spawner != null)

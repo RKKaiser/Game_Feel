@@ -9,11 +9,9 @@ public class PlayerController : MonoBehaviour
     // --- 观察者模式：事件定义 ---
     
     // 玩家死亡事件
-    // 订阅者: GameManager (结束游戏), SoundManager (播放死亡音效)
     public static event Action OnPlayerDied;
 
     // 玩家获得经验事件
-    // 订阅者: XPManager (处理升级逻辑)
     public static event Action<int> OnPlayerGainedXP;
 
     // 玩家升级完成事件
