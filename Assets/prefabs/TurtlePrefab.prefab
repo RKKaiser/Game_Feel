@@ -32,6 +32,30 @@ PrefabInstance:
       propertyPath: baseMoveSpeed
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_Size.x
+      value: 2.7857308
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_Size.y
+      value: 2.2432303
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_Offset.x
+      value: -0.19778657
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_Offset.y
+      value: -0.6216152
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_SpriteTilingProperty.oldSize.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_SpriteTilingProperty.oldSize.y
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 6865804086024174439, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -73,12 +97,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7369774192597257278, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 9e3e33f31c6b5c346be8f9ab1866207b, type: 3}
+    - target: {fileID: 7369774192597257278, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: m_Color.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7369774192597257278, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: m_Color.g
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7369774192597257278, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: m_Color.r
