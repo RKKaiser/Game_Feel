@@ -23,7 +23,7 @@ public class GameOverUI : MonoBehaviour
     public void Show(int killCount)
     {
         currentKillCount = killCount;
-        killCountText.text = $"É±µÐÊý£º{killCount}";
+        killCountText.text = $"É±µÐÊý:{killCount}";
         nameInput.text = "";
         gameObject.SetActive(true);
     }

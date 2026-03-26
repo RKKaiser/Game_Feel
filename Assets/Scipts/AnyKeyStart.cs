@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 public class AnyKeyStart : MonoBehaviour
 {
     [Header("场景设置")]
-    public string nextSceneName = "GameScene";  // 要加载的游戏场景名称
+    public string nextSceneName = "GameLevel";  // 要加载的游戏场景名称
     public bool useGameManager = true;          // 是否使用已有的 GameManager 启动游戏（可选）
 
     private bool hasStarted = false;             // 防止重复触发

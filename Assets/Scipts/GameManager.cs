@@ -40,34 +40,41 @@ public class GameManager : MonoBehaviour
         // 当玩家死亡时，自动调用 HandlePlayerDeath 方法
         PlayerController.OnPlayerDied += HandlePlayerDeath; 
         Debug.Log("[GameManager] 初始化完成，已监听玩家死亡事件。"); 
-    } 
+    }
 
     // --- 新增：处理死亡逻辑的核心方法 ---
     private void HandlePlayerDeath()
-{
-    if (currentState == GameState.GameOver || currentState == GameState.Paused)
-        return;
-    Debug.Log("[GameManager] 接收到玩家死亡信号，正在处理游戏结束流程...");
+    {
+        if (currentState == GameState.GameOver || currentState == GameState.Paused)
+            return;
 
-    // 1. 暂停时间
-    Time.timeScale = 0f;
+        Debug.Log("[GameManager] 接收到玩家死亡信号，正在处理游戏结束流程...");
 
-    // 2. 切换状态
-    currentState = GameState.GameOver;
+        // 1. 暂停时间
+        Time.timeScale = 0f;
 
-    // 3. 获取当前杀敌数并显示结算面板
-    int finalKills = killCount;
-    // 尝试查找场景中的 GameOverUI 组件
-    if (gameOverUI == null)
-        gameOverUI = FindObjectOfType<GameOverUI>();
-    if (gameOverUI != null)
-        gameOverUI.Show(finalKills);
-    else
-        Debug.LogError("[GameManager] 场景中找不到 GameOverUI 组件！");
+        // 2. 切换状态
+        currentState = GameState.GameOver;
 
-    // 4. 通知其他 UI 组件（可选）
-    OnGameOver?.Invoke();
-}
+        // 3. 获取当前杀敌数并显示结算面板
+        int finalKills = killCount;
+
+        // 使用 FindObjectsOfType 查找所有 GameOverUI 组件（包括未激活的物体）
+        GameOverUI[] gameOverUIs = FindObjectsOfType<GameOverUI>(true);
+        if (gameOverUIs.Length > 0)
+        {
+            // 通常只有一个，直接取第一个
+            GameOverUI gameOverUI = gameOverUIs[0];
+            gameOverUI.Show(finalKills);
+        }
+        else
+        {
+            Debug.LogError("[GameManager] 场景中找不到任何 GameOverUI 组件！请确保游戏场景中存在挂载该脚本的面板。");
+        }
+
+        // 4. 通知其他 UI 组件（可选）
+        OnGameOver?.Invoke();
+    }
 
     public void StartGame(string sceneName) 
     {
