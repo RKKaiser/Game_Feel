@@ -306,16 +306,24 @@ public class Enemy : MonoBehaviour
     {
         if (!gameObject.activeSelf) return;
 
-        // 1. 通知管理器加分/加经验
-        // 假设 GameManager 或 ScoreManager 是单例
-        // ScoreManager.Instance.AddScore(currentExpValue); 
-        // XPManager.Instance.GainExp(currentExpValue);
-        // 由于文档未提供具体单例接口，此处打印日志，实际项目中请取消注释并调用对应单例
-        Debug.Log($"[Enemy] {type} 死亡，提供经验: {currentExpValue}, 伤害值: {currentDamage}");
+        // --- 新增代码开始 ---
 
-        GameManager.Instance.AddKillCount(1);
+        // 1. 通知 XPManager 增加经验
+        // 使用 currentExpValue 而不是 baseExpValue，因为 current 已经经过了等级成长计算
+        if (XPManager.Instance != null)
+        {
+            XPManager.Instance.AddExperience(currentExpValue);
+        }
 
-        // 3. 回收到对象池
+        // --- 新增代码结束 ---
+
+        // 2. 通知 GameManager 增加击杀数 (保留你原有的逻辑)
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.AddKillCount(1);
+        }
+
+        // 3. 回收到对象池 (保留你原有的逻辑)
         if (spawner != null)
         {
             spawner.ReturnEnemyToPool(this);
