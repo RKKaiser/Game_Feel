@@ -2564,7 +2564,7 @@ MonoBehaviour:
   damage: 10
   fireRate: 0.1
   bulletSpeed: 15
-  bulletPoolTag: Shotgun
+  bulletPoolTag: MachineGun
   maxAmmo: 30
   reloadTime: 1.5
   shotgunPellets: 5
