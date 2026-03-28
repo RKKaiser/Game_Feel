@@ -47,56 +47,62 @@ public class Weapon : MonoBehaviour
         Grenade     // 手雷：投掷物，爆炸范围
     }
 
+    // 新增：升级类型枚举 (供 XPManager 使用)
+    // 这决定了当玩家升级时，这个武器能提供哪些升级选项
+    public enum UpgradeType
+    {
+        Damage,
+        FireRate,
+        // 机枪特有
+        ReloadSpeed,
+        // 霰弹枪特有
+        PelletCount,
+        // 手雷特有
+        ExplosionRange
+    }
+
     void Start()
     {
-        // 自动寻找枪口
+        // 自动寻找枪口 
         if (firePoint == null && transform.childCount > 0)
         {
             firePoint = transform.GetChild(0);
         }
 
-        if (firePoint == null)
-        {
-            Debug.LogWarning($"[{weaponName}] 未找到 FirePoint! 将从武器中心发射。");
-        }
-
-        // 初始化弹药
+        // 初始化弹药 
         if (weaponType == WeaponType.MachineGun)
         {
             currentAmmo = maxAmmo;
+            // 初始隐藏非机枪武器 (如果需要在Hierarchy中管理多武器，可以在这里控制SetActive)
+            // 但根据文档，初始只有机枪，其他武器可能在升级时才实例化或激活
         }
         else
         {
-            currentAmmo = -1; // -1 表示无限弹药或不适用
+            currentAmmo = -1;
         }
     }
 
     void Update()
     {
-        // 1. 游戏状态检查 (暂停、结束等)
-        if (GameManager.Instance != null && !GameManager.Instance.IsPlaying())
+        void Update()
         {
-            canShoot = false;
-            return;
-        }
-        canShoot = true;
+            // 游戏状态检查 (假设 GameManager 控制)
+            if (GameManager.Instance != null && !GameManager.Instance.IsPlaying())
+            {
+                return;
+            }
 
-        // 2. 监听射击输入
-        // 鼠标左键点击或按住 (根据武器类型，内部会判断是否达到射速限制)
-        if (canShoot && !isReloading && (Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space)))
-        {
-            TryShoot();
-        }
+            // 射击逻辑
+            if (!isReloading && (Input.GetButton("Fire1")))
+            {
+                TryShoot();
+            }
 
-        // 3. 监听换弹输入 (仅限机枪，按 'R' 键)
-        if (weaponType == WeaponType.MachineGun && !isReloading && currentAmmo <= 0 && Input.GetKeyDown(KeyCode.R))
-        {
-            StartCoroutine(Reload());
-        }
-        // 可选：允许手动换弹
-        if (weaponType == WeaponType.MachineGun && !isReloading && currentAmmo > 0 && currentAmmo < maxAmmo && Input.GetKeyDown(KeyCode.R))
-        {
-            StartCoroutine(Reload());
+            // 换弹逻辑 (仅机枪)
+            if (weaponType == WeaponType.MachineGun && !isReloading && currentAmmo <= 0 && Input.GetKeyDown(KeyCode.R))
+            {
+                StartCoroutine(Reload());
+            }
         }
     }
 
@@ -218,42 +224,81 @@ public class Weapon : MonoBehaviour
     }
 
     /// <summary>
-    /// 升级武器接口
-    /// 由 XPManager 或升级 UI 调用，根据升级选项修改属性
+    /// 升级武器属性
     /// </summary>
-    public void UpgradeWeapon(string upgradeType, float value)
+    /// <param name="upgradeType">升级的类型</param>
+    /// <param name="value">升级的数值 (具体数值由 XPManager 根据配置决定)</param>
+    public void ApplyUpgrade(UpgradeType upgradeType, float value)
     {
+        // 1. 首次解锁逻辑：如果该武器当前是未激活状态，先激活它
+        // (假设你的设计是：所有武器预制体都在场景里，只是初始隐藏；或者这里需要 Instantiate)
+        if (!gameObject.activeSelf)
+        {
+            UnlockWeapon();
+        }
+
+        // 2. 根据升级类型修改属性
         switch (upgradeType)
         {
-            case "Damage":
+            case UpgradeType.Damage:
                 damage += Mathf.RoundToInt(value);
+                Debug.Log($"{weaponName} 伤害提升! 当前伤害: {damage}");
                 break;
-            case "FireRate":
-                // value 可能是减少的时间间隔，或者是增加的射速百分比，这里假设是直接减少间隔
-                fireRate = Mathf.Max(0.05f, fireRate - value); 
+
+            case UpgradeType.FireRate:
+                // 射速提升通常是减少 fireRate 变量的值
+                fireRate = Mathf.Max(0.05f, fireRate - value);
+                Debug.Log($"{weaponName} 射速提升! 当前间隔: {fireRate:F2}s");
                 break;
-            case "PelletCount": // 仅霰弹枪
-                if (weaponType == WeaponType.Shotgun)
-                    shotgunPellets += Mathf.RoundToInt(value);
-                break;
-            case "ReloadSpeed": // 仅机枪
+
+            case UpgradeType.ReloadSpeed:
+                // 机枪：换弹速度提升 (减少时间)
                 if (weaponType == WeaponType.MachineGun)
-                    reloadTime = Mathf.Max(0.1f, reloadTime - value);
+                {
+                    reloadTime = Mathf.Max(0.2f, reloadTime - value);
+                    Debug.Log($"{weaponName} 换弹速度提升! 当前时间: {reloadTime:F2}s");
+                }
                 break;
-            case "ExplosionRange": // 仅手雷
+
+            case UpgradeType.PelletCount:
+                // 霰弹枪：增加弹丸数量
+                if (weaponType == WeaponType.Shotgun)
+                {
+                    shotgunPellets += Mathf.RoundToInt(value);
+                    Debug.Log($"{weaponName} 弹丸数量增加! 当前数量: {shotgunPellets}");
+                }
+                break;
+
+            case UpgradeType.ExplosionRange:
+                // 手雷：增加爆炸范围
                 if (weaponType == WeaponType.Grenade)
+                {
                     explosionRange += value;
-                break;
-            case "BulletSpeed":
-                bulletSpeed += value;
+                    Debug.Log($"{weaponName} 爆炸范围扩大! 当前范围: {explosionRange}");
+                }
                 break;
         }
-        
-        Debug.Log($"[{weaponName}] 升级成功! 类型:{upgradeType}, 新数值相关参数已更新。");
     }
 
-    // 辅助函数：向上查找玩家对象
-    GameObject GetPlayerOwner()
+    /// <summary>
+    /// 解锁并激活该武器
+    /// 场景：玩家初始只有机枪，当升级选项中选中霰弹枪/手雷时调用
+    /// </summary>
+    void UnlockWeapon()
+    {
+        gameObject.SetActive(true);
+        // 这里可以播放一个“解锁”的特效或音效
+        Debug.Log($"恭喜解锁新武器: {weaponName}!");
+
+        // 如果是机枪，确保弹药满
+        if (weaponType == WeaponType.MachineGun)
+        {
+            currentAmmo = maxAmmo;
+        }
+    }
+
+// 辅助函数：向上查找玩家对象
+GameObject GetPlayerOwner()
     {
         Transform current = transform;
         while (current != null)
