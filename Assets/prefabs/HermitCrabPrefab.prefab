@@ -180,6 +180,9 @@ MonoBehaviour:
   chargeInterval: 3
   chargeSpeedMultiplier: 3
   chargeDuration: 0.5
+  switchTimeThreshold: 60
+  normalSprite: {fileID: 21300000, guid: 8d80b310dc2513e498d17cff115ab8d7, type: 3}
+  evolvedSprite: {fileID: 21300000, guid: 55be20b9d46eb3b46a80fb07b9318f4c, type: 3}
   currentMaxHealth: 0
   currentMoveSpeed: 0
   currentHealth: 0

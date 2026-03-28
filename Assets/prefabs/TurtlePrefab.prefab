@@ -25,12 +25,24 @@ PrefabInstance:
       value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: normalSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 9e3e33f31c6b5c346be8f9ab1866207b, type: 3}
+    - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: baseMaxHealth
       value: 80
       objectReference: {fileID: 0}
     - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: baseMoveSpeed
       value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: evolvedSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 3d57e4858ab51fa4a8b6729ea395a637, type: 3}
+    - target: {fileID: 347142513179522169, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
+      propertyPath: switchTimeThreshold
+      value: 120
       objectReference: {fileID: 0}
     - target: {fileID: 5056628555869693184, guid: 8b84ae5b7d9fa9445a817a7386d979da, type: 3}
       propertyPath: m_Size.x

@@ -28,6 +28,12 @@ public class Enemy : MonoBehaviour
     public float chargeSpeedMultiplier = 3f;
     public float chargeDuration = 0.5f;
 
+    // --- 外观切换配置 ---
+    [Header("外观切换 (仅视觉效果)")]
+    public float switchTimeThreshold = 60f; // 切换形态的游戏时间阈值
+    public Sprite normalSprite;             // 基础形态图片
+    public Sprite evolvedSprite;            // 进阶形态图片
+
     // --- 运行时属性 (动态计算后) ---
     [HideInInspector] public float currentMaxHealth;
     [HideInInspector] public float currentMoveSpeed;
@@ -48,6 +54,7 @@ public class Enemy : MonoBehaviour
     private float nextChargeTime = 0f;
     private Coroutine chargeCoroutine;
     private bool isInitialized = false;
+    private bool hasEvolvedVisual = false;
 
     void Awake()
     {
@@ -83,12 +90,15 @@ public class Enemy : MonoBehaviour
         currentHealth = currentMaxHealth;
         isCharging = false;
         nextChargeTime = Time.time + (type == EnemyType.SeaTurtle ? chargeInterval : 0f);
-        
+
         if (sr != null) sr.color = originalColor;
         if (rb != null) rb.velocity = Vector2.zero;
-        
+
         // 恢复缩放
         transform.localScale = initialScale;
+
+        float gameTime = Time.timeSinceLevelLoad;
+        UpdateVisualBasedOnTime(gameTime);
     }
 
     /// <summary>
@@ -125,13 +135,16 @@ public class Enemy : MonoBehaviour
         float stretchAmount = 0.1f;
         float stretchSpeed = currentMoveSpeed * 2.5f; 
         float stretch = Mathf.Sin(Time.time * stretchSpeed) * stretchAmount;
-        
+
         // 保持初始缩放比例基础上进行形变
         transform.localScale = new Vector3(
-            initialScale.x - stretch, 
-            initialScale.y + stretch, 
+            initialScale.x - stretch,
+            initialScale.y + stretch,
             initialScale.z
         );
+
+        float currentGameTime = Time.timeSinceLevelLoad;
+        UpdateVisualBasedOnTime(currentGameTime);
 
         // 面向玩家
         FacePlayer();
@@ -255,6 +268,31 @@ public class Enemy : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die();
+        }
+    }
+
+    void UpdateVisualBasedOnTime(float gameTime)
+    {
+        // 检查是否达到了切换时间
+        bool shouldEvolve = gameTime >= switchTimeThreshold;
+
+        // 只有当状态发生变化时才执行切换（优化性能，避免每帧重复赋值同一个Texture）
+        if (shouldEvolve != hasEvolvedVisual)
+        {
+            hasEvolvedVisual = shouldEvolve;
+
+            // 执行图片切换
+            if (hasEvolvedVisual && evolvedSprite != null)
+            {
+                sr.sprite = evolvedSprite;
+                // 可选：如果新图片的尺寸差异很大，可以在这里重置 initialScale 以适配挤压动画
+                // initialScale = new Vector3(1.5f, 1.5f, 1); // 手动调整或根据Sprite Bounds计算
+            }
+            else if (normalSprite != null) // 回到基础形态（虽然通常游戏不会倒流时间）
+            {
+                sr.sprite = normalSprite;
+                // initialScale = ... // 恢复原始大小
+            }
         }
     }
 
