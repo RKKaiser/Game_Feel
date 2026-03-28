@@ -1,12 +1,8 @@
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-/// <summary>
-/// 武器核心逻辑 (重构版)
-/// 功能：处理射击、弹药、换弹、武器类型差异化逻辑、升级接口
-/// 挂载位置：具体的武器物体 (如 Shotgun_Weapon, MachineGun_Weapon, Grenade_Weapon)
-/// 依赖：BulletPoolManager, GameManager (用于检查游戏状态)
-/// </summary>
+
 public class Weapon : MonoBehaviour
 {
     [Header("武器基础信息")]
@@ -37,7 +33,6 @@ public class Weapon : MonoBehaviour
 
     [Header("内部状态")]
     private float nextFireTime = 0f;
-    private bool canShoot = true; // 用于控制升级暂停时的射击
 
     // 武器类型枚举
     public enum WeaponType
@@ -82,8 +77,6 @@ public class Weapon : MonoBehaviour
         }
     }
 
-    void Update()
-    {
         void Update()
         {
             // 游戏状态检查 (假设 GameManager 控制)
@@ -104,7 +97,6 @@ public class Weapon : MonoBehaviour
                 StartCoroutine(Reload());
             }
         }
-    }
 
     public void TryShoot()
     {
@@ -280,10 +272,21 @@ public class Weapon : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 解锁并激活该武器
-    /// 场景：玩家初始只有机枪，当升级选项中选中霰弹枪/手雷时调用
-    /// </summary>
+    public List<UpgradeType> GetAvailableUpgrades()
+    {
+        List<UpgradeType> upgrades = new List<UpgradeType>();
+        upgrades.Add(UpgradeType.Damage);
+        upgrades.Add(UpgradeType.FireRate);
+
+        switch (weaponType)
+        {
+            case WeaponType.MachineGun: upgrades.Add(UpgradeType.ReloadSpeed); break;
+            case WeaponType.Shotgun: upgrades.Add(UpgradeType.PelletCount); break;
+            case WeaponType.Grenade: upgrades.Add(UpgradeType.ExplosionRange); break;
+        }
+        return upgrades;
+    }
+
     void UnlockWeapon()
     {
         gameObject.SetActive(true);
