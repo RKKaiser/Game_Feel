@@ -1068,6 +1068,10 @@ MonoBehaviour:
     prefab: {fileID: 7563944548294569723, guid: ea2ed22bd13f6a14598faadc087d0abc, type: 3}
     defaultCapacity: 20
     maxCapacity: 40
+  - poolTag: Grenade
+    prefab: {fileID: 7563944548294569723, guid: ea2ed22bd13f6a14598faadc087d0abc, type: 3}
+    defaultCapacity: 20
+    maxCapacity: 40
 --- !u!1 &869016276
 GameObject:
   m_ObjectHideFlags: 0
