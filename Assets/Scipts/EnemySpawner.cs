@@ -9,7 +9,10 @@ public class EnemySpawner : MonoBehaviour
     [Header("对象池设置")]
     public int initialPoolSize = 15; 
     public int poolExpandStep = 5;   
-    public bool allowDynamicExpand = true; 
+    public bool allowDynamicExpand = true;
+
+    [Header("生成层级管理")]
+    public Transform enemiesParent;
 
     [Header("敌人预制体 (必须赋值)")]
     public GameObject crabPrefab;   // 寄居蟹
@@ -292,8 +295,18 @@ public class EnemySpawner : MonoBehaviour
         Vector2 spawnPos = GetRandomSpawnPosition();
         enemyObj.transform.position = spawnPos;
         enemyObj.transform.rotation = Quaternion.identity;
+
+        // 设置父物体逻辑
+        if (enemiesParent != null)
+        {
+            enemyObj.transform.SetParent(enemiesParent); // 设置为 Enemies 的子物体
+        }
+        else
+        {
+            enemyObj.transform.SetParent(null); // 如果没赋值，保持在根层级（防止报错）
+        }
+
         enemyObj.SetActive(true);
-        enemyObj.transform.SetParent(null);
 
         Enemy enemyScript = enemyObj.GetComponent<Enemy>();
         if (enemyScript != null)
