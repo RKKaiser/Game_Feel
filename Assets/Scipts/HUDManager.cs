@@ -33,11 +33,8 @@ public class HUDManager : MonoBehaviour
         Pen_FireRate,
         Boom_FireRate,
         ReloadTime,         // »»µ¯Ê±¼ä£¨Ãë£©
-        PelletCount,        // µ¯ÍèÊýÁ¿
         ExplosionRange,     // ±¬Õ¨·¶Î§
-        CurrentAmmo,        // µ±Ç°µ¯Ò©
-        MaxAmmo,            // ×î´óµ¯Ò©
-        IsReloading         // ÊÇ·ñ»»µ¯ÖÐ£¨×Ö·û´®£©
+        ShotgunPellets,        // µ±Ç°µ¯Ò©
     }
 
     private void Awake()
@@ -103,17 +100,10 @@ public class HUDManager : MonoBehaviour
                 return playerWeapon.fireRate*3;
             case DataType.ReloadTime:
                 return playerWeapon.reloadTime;
-            case DataType.PelletCount:
-                return playerWeapon.shotgunPellets;
             case DataType.ExplosionRange:
                 return playerWeapon.explosionRange.ToString("F1");
-            case DataType.CurrentAmmo:
-                int ammo = playerWeapon.GetCurrentAmmo();
-                return ammo < 0 ? "¡Þ" : ammo.ToString();
-            case DataType.MaxAmmo:
-                return playerWeapon.GetMaxAmmo();
-            case DataType.IsReloading:
-                return playerWeapon.IsReloading() ? "»»µ¯ÖÐ" : "¾ÍÐ÷";
+            case DataType.ShotgunPellets:
+                return playerWeapon.shotgunPellets;
             default:
                 return null;
         }
