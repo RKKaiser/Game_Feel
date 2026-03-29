@@ -21,7 +21,7 @@ public class Weapon : MonoBehaviour
     [Header("弹药系统 (适用于机枪等)")]
     public int maxAmmo = 30;
     public float reloadTime = 1.5f;
-    private int currentAmmo;
+    private int currentAmmo=0;
     private bool isReloading = false;
 
     [Header("霰弹枪专属")]
