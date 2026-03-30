@@ -664,29 +664,20 @@ MonoBehaviour:
     dataType: 1
     format: "\u673A\u67AA\u4F24\u5BB3{0}"
   - textComponent: {fileID: 349593301}
-    dataType: 4
+    dataType: 3
     format: "\u673A\u67AA\u5C04\u901F{0}/s"
   - textComponent: {fileID: 1096012541}
-    dataType: 7
+    dataType: 5
     format: "\u6362\u5F39\u65F6\u95F4{0}s"
   - textComponent: {fileID: 1640126371}
     dataType: 2
     format: "\u9730\u5F39\u4F24\u5BB3{0}"
   - textComponent: {fileID: 1187337202}
-    dataType: 5
+    dataType: 4
     format: "\u9730\u5F39\u5C04\u901F{0}/s"
   - textComponent: {fileID: 1425476912}
-    dataType: 9
-    format: "\u9730\u5F39\u5F39\u91CF{0}"
-  - textComponent: {fileID: 0}
-    dataType: 3
-    format: "\u624B\u96F7\u4F24\u5BB3{0}"
-  - textComponent: {fileID: 0}
     dataType: 6
-    format: "\u624B\u96F7\u5C04\u901F{0}/s"
-  - textComponent: {fileID: 0}
-    dataType: 8
-    format: "\u7206\u70B8\u8303\u56F4{0}"
+    format: "\u9730\u5F39\u5F39\u91CF{0}"
 --- !u!1 &349593300
 GameObject:
   m_ObjectHideFlags: 0
