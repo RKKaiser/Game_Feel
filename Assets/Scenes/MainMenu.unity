@@ -1306,7 +1306,7 @@ MonoBehaviour:
     loop: 0
   - soundType: 6
     clip: {fileID: 8300000, guid: 6bfdc4a563af67b46bccdfdbb0fe1a1a, type: 3}
-    volume: 0.1
+    volume: 0.2
     loop: 0
   - soundType: 9
     clip: {fileID: 8300000, guid: 2a5dfd97875a70f4fb5893f3a9cb25a1, type: 3}
