@@ -2467,7 +2467,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59682607ac26dc04ebe9d8ee0c2ecbdb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
+  moveSpeed: 7
   weaponPivot: {fileID: 1948689314}
   weaponRotationRadius: 2
   availableWeapons:
@@ -2919,7 +2919,6 @@ GameObject:
   - component: {fileID: 1120741704}
   - component: {fileID: 1120741705}
   - component: {fileID: 1120741706}
-  - component: {fileID: 1120741707}
   m_Layer: 0
   m_Name: XPManager
   m_TagString: Untagged
@@ -2975,24 +2974,6 @@ MonoBehaviour:
   spriteRenderer: {fileID: 784009736}
   fadeOutDuration: 1
   disableOnComplete: 1
---- !u!114 &1120741707
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1120741703}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8178d8ea382099344934331e717335c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  BaseXPsThresh: 100
-  XPThreshGrowthRate: 0.2
-  allWeaponPrefabs:
-  - {fileID: 1814462680}
-  - {fileID: 202490975}
-  - {fileID: 901318304}
 --- !u!1 &1128172041
 GameObject:
   m_ObjectHideFlags: 0
@@ -3701,13 +3682,13 @@ MonoBehaviour:
   turtlePrefab: {fileID: 4224131362653471544, guid: 0bc22abcded242a4592b00e87e378a75, type: 3}
   stage1Duration: 30
   stage2Duration: 60
-  stage3Duration: 180
-  spawnRadius: 18
-  minSpawnDistance: 10
+  stage3Duration: 90
+  spawnRadius: 22
+  minSpawnDistance: 14
   bufferZone: 2
   baseSpawnInterval: 2
   minSpawnInterval: 0.3
-  difficultyGrowthRate: 0.04
+  difficultyGrowthRate: 0.02
 --- !u!4 &1339054002
 Transform:
   m_ObjectHideFlags: 0
@@ -5439,53 +5420,6 @@ RectTransform:
   m_AnchoredPosition: {x: 159, y: 8.2}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &2051157733
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2051157735}
-  - component: {fileID: 2051157734}
-  m_Layer: 0
-  m_Name: GameManagertest
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2051157734
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2051157733}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 58762178b8c7f674c970c2caa9ced138, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  currentState: 1
-  currentScore: 0
-  killCount: 0
---- !u!4 &2051157735
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2051157733}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2058628666
 GameObject:
   m_ObjectHideFlags: 0
@@ -5639,6 +5573,5 @@ SceneRoots:
   - {fileID: 1057881772}
   - {fileID: 1917153910}
   - {fileID: 92012548}
-  - {fileID: 2051157735}
   - {fileID: 249514201}
   - {fileID: 632093201}
