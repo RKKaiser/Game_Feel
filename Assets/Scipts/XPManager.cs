@@ -22,8 +22,6 @@ public class XPManager : MonoBehaviour
     private float currentXP; 
     private int currentLevel = 1;
 
-    public EX_SpriteFadeOutEffect upgradeEffect; // 通过 Inspector 赋值
-
     void Awake() 
     { 
         if (Instance == null) 
@@ -83,8 +81,6 @@ public class XPManager : MonoBehaviour
     { 
         currentLevel++;
 
-        // 触发升级特效
-        upgradeEffect.PlayEffect();
 
         currentXP -= GetRequiredXPForNextLevel(); // 扣除升级所需经验 
         Debug.Log($"[XPManager] 升级了! 当前等级: {currentLevel}"); 
