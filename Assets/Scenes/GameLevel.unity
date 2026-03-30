@@ -2919,6 +2919,7 @@ GameObject:
   - component: {fileID: 1120741704}
   - component: {fileID: 1120741705}
   - component: {fileID: 1120741706}
+  - component: {fileID: 1120741707}
   m_Layer: 0
   m_Name: XPManager
   m_TagString: Untagged
@@ -2959,10 +2960,6 @@ MonoBehaviour:
   - {fileID: 1814462680}
   - {fileID: 202490975}
   - {fileID: 901318304}
-  xpSlider: {fileID: 0}
-  levelText: {fileID: 0}
-  notificationText: {fileID: 0}
-  upgradeEffect: {fileID: 1120741706}
 --- !u!114 &1120741706
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2978,6 +2975,24 @@ MonoBehaviour:
   spriteRenderer: {fileID: 784009736}
   fadeOutDuration: 1
   disableOnComplete: 1
+--- !u!114 &1120741707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1120741703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8178d8ea382099344934331e717335c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BaseXPsThresh: 100
+  XPThreshGrowthRate: 0.2
+  allWeaponPrefabs:
+  - {fileID: 1814462680}
+  - {fileID: 202490975}
+  - {fileID: 901318304}
 --- !u!1 &1128172041
 GameObject:
   m_ObjectHideFlags: 0
