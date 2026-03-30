@@ -2,19 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 1. 重新定义枚举：完全对应你图片中的音频文件名
 public enum SoundType
 {
     None,
-    Gatling,            // 加特林音效
-    Fail,               // 失败音效
-    GrenadeThrow,       // 手雷投掷
-    GrenadeExplosion,   // 手雷爆炸
-    EnemyHit,           // 敌人受击
-    Shotgun,            // 散弹枪
-    BGM,                // 游戏bgm
-    Click,              // 点击音效
-    CrabUpgrade         // 螃蟹升级
+    Gatling,            // 对应：加特林音效
+    Fail,               // 对应：失败音效
+    GrenadeThrow,       // 对应：手雷投掷
+    GrenadeExplosion,   // 对应：手雷爆炸
+    EnemyHit,           // 对应：敌人受击
+    Shotgun,            // 对应：散弹弹枪
+    BGM,                // 对应：游戏bgm
+    Click,              // 对应：点击音效
+    CrabUpgrade         // 对应：螃蟹升级
 }
 
 [System.Serializable]
@@ -29,21 +28,20 @@ public class SoundData
 
 public class SoundManager : MonoBehaviour
 {
-    // 单例模式
     public static SoundManager Instance;
 
     [Header("音效配置")]
-    public List<SoundData> soundDatas; // 在Inspector中拖入你的9个音频文件
+    public List<SoundData> soundDatas;
 
-    private Dictionary<SoundType, SoundData> soundDict;
+    [Header("音频源组件")]
+    public AudioSource sfxSource;      // 用于普通音效（手雷、受击等）
+    public AudioSource bgmSource;      // 用于背景音乐
+    public AudioSource gatlingSource;  // 新增：专门用于加特林音效
 
-    [Header("音频源")]
-    public AudioSource bgmSource; // 专门播放 BGM
-    public AudioSource sfxSource; // 专门播放其他音效
+    private Dictionary<SoundType, SoundData> soundDictionary;
 
-    private void Awake()
+    void Awake()
     {
-        // 单例初始化
         if (Instance == null)
         {
             Instance = this;
@@ -55,54 +53,83 @@ public class SoundManager : MonoBehaviour
             return;
         }
 
-        // 将列表转换为字典，提高查找效率
-        soundDict = new Dictionary<SoundType, SoundData>();
+        // 初始化字典
+        soundDictionary = new Dictionary<SoundType, SoundData>();
         foreach (var data in soundDatas)
         {
-            if (!soundDict.ContainsKey(data.soundType))
+            if (!soundDictionary.ContainsKey(data.soundType))
             {
-                soundDict.Add(data.soundType, data);
+                soundDictionary.Add(data.soundType, data);
             }
         }
+
+        // 确保组件已赋值
+        if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
+        if (bgmSource == null) bgmSource = gameObject.AddComponent<AudioSource>();
+        if (gatlingSource == null) gatlingSource = gameObject.AddComponent<AudioSource>();
     }
 
-    // 播放音效的公共方法
+    /// <summary>
+    /// 播放音效
+    /// </summary>
     public void PlaySound(SoundType type)
     {
-        if (soundDict.TryGetValue(type, out SoundData data))
+        if (!soundDictionary.ContainsKey(type)) return;
+
+        SoundData data = soundDictionary[type];
+
+        if (type == SoundType.BGM)
         {
-            // 如果是背景音乐
-            if (type == SoundType.BGM)
+            // 背景音乐逻辑
+            bgmSource.clip = data.clip;
+            bgmSource.volume = data.volume;
+            bgmSource.loop = data.loop;
+            if (!bgmSource.isPlaying)
+                bgmSource.Play();
+        }
+        else if (type == SoundType.Gatling)
+        {
+            // 加特林逻辑：专门处理“新覆盖旧”
+            if (data.clip != null)
             {
-                if (bgmSource != null && data.clip != null)
-                {
-                    bgmSource.clip = data.clip;
-                    bgmSource.volume = data.volume;
-                    bgmSource.loop = data.loop;
-                    bgmSource.Play();
-                }
-            }
-            // 如果是普通音效
-            else
-            {
-                if (sfxSource != null && data.clip != null)
-                {
-                    sfxSource.PlayOneShot(data.clip, data.volume);
-                }
+                gatlingSource.Stop(); // 1. 强制停止当前正在播放的
+                gatlingSource.clip = data.clip;
+                gatlingSource.volume = data.volume;
+                gatlingSource.loop = false; // 加特林通常是短促的射击声，设为false
+                gatlingSource.Play();   // 2. 重新播放
             }
         }
         else
         {
-            Debug.LogWarning($"SoundManager: 未找到音效类型 {type}");
+            // 普通音效逻辑 (使用 PlayOneShot 允许重叠，如手雷爆炸)
+            if (data.clip != null)
+            {
+                sfxSource.PlayOneShot(data.clip, data.volume);
+            }
         }
     }
 
-    // 专门用于停止背景音乐的方法
-    public void StopBGM()
+    /// <summary>
+    /// 停止指定音效
+    /// </summary>
+    public void StopSound(SoundType type)
     {
-        if (bgmSource != null)
+        if (type == SoundType.BGM)
         {
             bgmSource.Stop();
+        }
+        else if (type == SoundType.Gatling)
+        {
+            // 专门停止加特林
+            gatlingSource.Stop();
+        }
+        else
+        {
+            // 对于 PlayOneShot 的音效，AudioSource.Stop() 会停止所有声音。
+            // 如果你需要精准停止某个特定的 OneShot 音效（比如只停手雷不停受击），
+            // 逻辑会非常复杂，通常建议让短音效自然播放结束，或者全部停止。
+            // 这里简单处理：如果调用停止非BGM/加特林，暂不处理或停止所有SFX。
+            // sfxSource.Stop(); 
         }
     }
 }

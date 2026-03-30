@@ -101,6 +101,8 @@ public class GameManager : MonoBehaviour
         if (Time.timeScale > 0f) Time.timeScale = 0f; 
         currentState = GameState.GameOver; 
         OnGameOver?.Invoke(); 
+
+        SoundManager.Instance.PlaySound(SoundType.Fail);
     } 
 
     public void ReturnToMainMenu() 

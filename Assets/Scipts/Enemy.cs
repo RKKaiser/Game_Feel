@@ -265,6 +265,8 @@ public class Enemy : MonoBehaviour
             Invoke(nameof(ResetColor), 0.05f);
         }
 
+        SoundManager.Instance.PlaySound(SoundType.EnemyHit);
+
         if (currentHealth <= 0)
         {
             Die();

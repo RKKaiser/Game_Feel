@@ -137,9 +137,16 @@ public class Weapon : MonoBehaviour
                 break;
         }
         
-        // 这里可以添加后坐力触发事件，例如：
-        // AudioManager.Instance.PlaySound("ShootSound"); 
-        // PlayerController.Instance.AddRecoil(...);
+        SoundManager.Instance.StopSound(SoundType.Gatling);
+
+            if (weaponType == WeaponType.MachineGun)
+    {
+        SoundManager.Instance.PlaySound(SoundType.Gatling);
+    }
+    else if (weaponType == WeaponType.Shotgun)
+    {
+        SoundManager.Instance.PlaySound(SoundType.Shotgun);
+    }
     }
 
     void FireShotgun(Vector2 baseDir, GameObject owner)
