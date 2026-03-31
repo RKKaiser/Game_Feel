@@ -144,7 +144,9 @@ public class GameManager : MonoBehaviour
             OnReturnToMainMenu?.Invoke();
             return;
         }
-        
+        // 停止正在播放的 Fail 音效
+        SoundManager.Instance.StopSound(SoundType.Fail);
+
         SceneManager.LoadScene(mainMenuScene);
         OnReturnToMainMenu?.Invoke();
     }

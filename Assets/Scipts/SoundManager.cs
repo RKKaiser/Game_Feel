@@ -120,16 +120,12 @@ public class SoundManager : MonoBehaviour
         }
         else if (type == SoundType.Gatling)
         {
-            // 专门停止加特林
             gatlingSource.Stop();
         }
         else
         {
-            // 对于 PlayOneShot 的音效，AudioSource.Stop() 会停止所有声音。
-            // 如果你需要精准停止某个特定的 OneShot 音效（比如只停手雷不停受击），
-            // 逻辑会非常复杂，通常建议让短音效自然播放结束，或者全部停止。
-            // 这里简单处理：如果调用停止非BGM/加特林，暂不处理或停止所有SFX。
-            // sfxSource.Stop(); 
+            // 停止所有通过 sfxSource 播放的普通音效
+            sfxSource.Stop();
         }
     }
 }
